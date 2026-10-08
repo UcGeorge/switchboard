@@ -42,7 +42,12 @@ with tempfile.TemporaryDirectory() as tmp:
   while time.time()<deadline:
    done,status=os.waitpid(pid,os.WNOHANG)
    if done:exited=True;assert os.waitstatus_to_exitcode(status)==0;break
-   time.sleep(.1)
+   ready,_,_=select.select([fd],[],[],.1)
+   if ready:
+    try:b=os.read(fd,65536)
+    except OSError:continue
+    if b'\x1b]11;?' in b:os.write(fd,b'\x1b]11;rgb:0b0b/0e0e/1414\x1b\\')
+    if b'\x1b[6n' in b:os.write(fd,b'\x1b[1;1R')
   assert exited,'TUI did not stop cleanly'
   print('Fresh TUI: created directory, log, database, rendered running state, and quit cleanly')
  finally:
