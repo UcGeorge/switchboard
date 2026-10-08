@@ -19,8 +19,13 @@ try {
     $parts = $matches[0] -split '\s+'
     $asset = $parts[1]
     Invoke-WebRequest "$url/$asset" -OutFile "$tmp/$asset"
-    if ((Get-FileHash "$tmp/$asset" -Algorithm SHA256).Hash.ToLower() -ne $parts[0]) { throw 'Checksum mismatch: nothing installed' }
-    Expand-Archive "$tmp/$asset" -DestinationPath "$tmp/unpacked"
+    $stream = [System.IO.File]::OpenRead("$tmp/$asset")
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { $actual = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
+    finally { $stream.Dispose(); $sha.Dispose() }
+    if ($actual -ne $parts[0]) { throw 'Checksum mismatch: nothing installed' }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory("$tmp/$asset", "$tmp/unpacked")
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     Copy-Item "$tmp/unpacked/switchboard.exe" "$dir/switchboard.exe" -Force
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')

@@ -6,7 +6,7 @@ system = {'Darwin': 'darwin', 'Linux': 'linux', 'Windows':'windows'}.get(platfor
 arch = {'arm64': 'arm64', 'aarch64': 'arm64', 'x86_64': 'amd64', 'amd64':'amd64'}.get(platform.machine().lower())
 if not system or not arch: raise SystemExit('Unsupported test platform')
 ext = 'zip' if system == 'windows' else 'tar.gz'
-installer = ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(root/'scripts/install.ps1')] if system == 'windows' else ['sh',str(root/'scripts/install.sh')]
+installer = [shutil.which('pwsh') or shutil.which('powershell') or 'powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(root/'scripts/install.ps1')] if system == 'windows' else ['sh',str(root/'scripts/install.sh')]
 archives = list((root/'dist').glob(f'switchboard_*_{system}_{arch}.{ext}'))
 if not archives: raise SystemExit('Build an archive for the host first with scripts/release.py')
 archive = max(archives, key=lambda p: p.stat().st_mtime)
