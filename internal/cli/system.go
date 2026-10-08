@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/ucgeorge/switchboard/internal/core"
@@ -138,11 +139,20 @@ func authCmd() *cobra.Command {
 			pw := password
 			if pw == "" {
 				fmt.Fprint(os.Stderr, "New dashboard password (min 8 chars): ")
-				line, err := bufio.NewReader(os.Stdin).ReadString('\n')
-				if err != nil && line == "" {
-					return errors.New("no password provided")
+				if term.IsTerminal(os.Stdin.Fd()) {
+					b, err := term.ReadPassword(os.Stdin.Fd())
+					fmt.Fprintln(os.Stderr)
+					if err != nil {
+						return err
+					}
+					pw = string(b)
+				} else {
+					line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+					if err != nil && line == "" {
+						return errors.New("no password provided")
+					}
+					pw = strings.TrimRight(line, "\r\n")
 				}
-				pw = strings.TrimRight(line, "\r\n")
 			}
 			return runWithService(cmd.Context(), func(ctx context.Context, svc *core.Service) error {
 				if err := svc.SetPassword(ctx, pw); err != nil {

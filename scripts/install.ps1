@@ -24,7 +24,7 @@ try {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     Copy-Item "$tmp/unpacked/switchboard.exe" "$dir/switchboard.exe" -Force
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-    if ($dir -notin ($userPath -split ';')) { [Environment]::SetEnvironmentVariable('Path', "$userPath;$dir", 'User') }
+    if ($env:SWITCHBOARD_NO_PATH_UPDATE -ne '1' -and $dir -notin ($userPath -split ';')) { [Environment]::SetEnvironmentVariable('Path', "$userPath;$dir", 'User') }
     $env:Path = "$dir;$env:Path"
     & "$dir/switchboard.exe" version
     Write-Host "Installed in $dir. New terminals will have switchboard on PATH."

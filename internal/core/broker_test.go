@@ -404,3 +404,58 @@ func TestOfflineChannelCannotBeTakenOver(t *testing.T) {
 		t.Fatal("original owner changed")
 	}
 }
+
+func TestConcurrentOAuthRefreshIsSingleUse(t *testing.T) {
+	svc := newTestService(t)
+	ctx := context.Background()
+	client, _, err := svc.RegisterOAuthClient(ctx, OAuthClientInput{Name: "refresh-test", RedirectURIs: []string{"http://localhost/cb"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := svc.IssueAuthCode(ctx, client.ID, "http://localhost/cb", "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", "S256", "mcp", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pair, err := svc.ExchangeAuthCode(ctx, code, client.ID, "http://localhost/cb", "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gate := make(chan struct{})
+	results := make(chan error, 2)
+	for range 2 {
+		go func() { <-gate; _, e := svc.RefreshOAuthToken(ctx, pair.RefreshToken, client.ID); results <- e }()
+	}
+	close(gate)
+	success := 0
+	for range 2 {
+		if <-results == nil {
+			success++
+		}
+	}
+	if success != 1 {
+		t.Fatalf("refresh succeeded %d times, want exactly one", success)
+	}
+}
+
+func TestStreamedToolCallsAreStoredOnCompletion(t *testing.T) {
+	svc := newTestService(t)
+	ctx := context.Background()
+	key := mustKey(t, svc)
+	ch := mustChannel(t, svc, "tools")
+	r := submit(t, svc, key, "m", msg("user", "weather?"))
+	if _, err := svc.ClaimRequest(ctx, ch.ID, "tok_test", time.Second); err != nil {
+		t.Fatal(err)
+	}
+	calls := []openai.ToolCall{{ID: "call_weather", Type: "function", Function: openai.FunctionCall{Name: "weather", Arguments: `{"city":"Lagos"}`}}}
+	if err := svc.StreamDelta(ctx, ch.ID, "tok_test", r.ID, openai.Delta{ToolCalls: openai.ToolCallsAsDeltas(calls, 0)}); err != nil {
+		t.Fatal(err)
+	}
+	done, err := svc.CompleteRequest(ctx, ch.ID, "tok_test", r.ID, openai.Answer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, ok := ParseAnswer(done)
+	if !ok || a.FinishReason != "tool_calls" || len(a.ToolCalls) != 1 || a.ToolCalls[0].ID != "call_weather" {
+		t.Fatalf("lost streamed tool calls: %+v", a)
+	}
+}

@@ -90,6 +90,7 @@ type liveRequest struct {
 	deltas    []openai.Delta
 	content   strings.Builder
 	toolCalls int
+	calls     []openai.ToolCall
 	subs      map[int]chan openai.Delta
 	nextSub   int
 	done      chan struct{}
@@ -113,6 +114,12 @@ func (l *liveRequest) publishDelta(d openai.Delta) (first bool) {
 		l.content.WriteString(*d.Content)
 	}
 	l.toolCalls += len(d.ToolCalls)
+	for _, call := range d.ToolCalls {
+		if call.Function != nil {
+			l.calls = append(l.calls, openai.ToolCall{ID: call.ID, Type: call.Type, Function: openai.FunctionCall{Name: call.Function.Name, Arguments: call.Function.Arguments}})
+		}
+	}
+
 	for _, ch := range l.subs {
 		select {
 		case ch <- d:
@@ -152,6 +159,12 @@ func (l *liveRequest) streamed() (string, int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.content.String(), l.toolCalls
+}
+
+func (l *liveRequest) streamedCalls() []openai.ToolCall {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]openai.ToolCall(nil), l.calls...)
 }
 
 func (l *liveRequest) result() (Outcome, bool) {
@@ -488,6 +501,13 @@ func (s *Service) CompleteRequest(ctx context.Context, channelID, tokenID, reque
 	a = a.Normalized(func() string { return ids.Random(16) })
 	live := s.ensureLive(requestID)
 	streamedContent, _ := live.streamed()
+	if len(a.ToolCalls) == 0 {
+		a.ToolCalls = live.streamedCalls()
+		if len(a.ToolCalls) > 0 && a.FinishReason == "stop" {
+			a.FinishReason = "tool_calls"
+		}
+		a = a.Normalized(func() string { return ids.Random(16) })
+	}
 	if a.Content == "" && streamedContent != "" {
 		a.Content = streamedContent
 	}

@@ -1,0 +1,9 @@
+:root { --sl-color-accent-low: #fff3d3; --sl-color-accent: #a56b00; --sl-color-accent-high: #593900; --sl-font: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+:root[data-theme='dark'] { --sl-color-accent-low: #312616; --sl-color-accent: #f5b942; --sl-color-accent-high: #ffe3a6; --sl-color-black:#0b0e14; --sl-color-gray-6:#131923; }
+.header { backdrop-filter:blur(12px); }
+.site-title { letter-spacing:-.03em; }
+h1,h2,h3 { letter-spacing:-.025em; }
+.sl-markdown-content { line-height:1.75; }
+.sl-markdown-content table { font-size:.9rem; }
+.sl-markdown-content a { text-underline-offset:3px; }
+.expressive-code { margin-block:1.5rem; }

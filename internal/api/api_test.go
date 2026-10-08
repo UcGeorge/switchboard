@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ type fixture struct {
 	svc *core.Service
 	srv *httptest.Server
 	key string
+	wg  sync.WaitGroup
 }
 
 func setup(t *testing.T) *fixture {
@@ -43,12 +45,14 @@ func setup(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
+	f := &fixture{svc: svc, srv: srv, key: plain}
 	t.Cleanup(func() {
+		f.wg.Wait()
 		srv.Close()
 		svc.Close()
 		d.Close()
 	})
-	return &fixture{svc: svc, srv: srv, key: plain}
+	return f
 }
 
 func (f *fixture) post(t *testing.T, path, key, body string) *http.Response {
@@ -66,6 +70,11 @@ func (f *fixture) post(t *testing.T, path, key, body string) *http.Response {
 }
 
 // agent runs fn against the next claimed request, like an MCP agent would.
+func (f *fixture) startAgent(t *testing.T, fn func(channelID, requestID string)) {
+	f.wg.Add(1)
+	go func() { defer f.wg.Done(); f.agent(t, fn) }()
+}
+
 func (f *fixture) agent(t *testing.T, fn func(channelID, requestID string)) {
 	t.Helper()
 	ctx := context.Background()
@@ -107,7 +116,7 @@ func TestValidation(t *testing.T) {
 
 func TestNonStreaming(t *testing.T) {
 	f := setup(t)
-	go f.agent(t, func(ch, id string) {
+	f.startAgent(t, func(ch, id string) {
 		if _, err := f.svc.CompleteRequest(context.Background(), ch, "tok", id, openai.Answer{Content: "Hello from the agent"}); err != nil {
 			t.Error(err)
 		}
@@ -169,7 +178,7 @@ func readSSE(t *testing.T, body io.Reader) (content string, finish string, sawDo
 
 func TestStreaming(t *testing.T) {
 	f := setup(t)
-	go f.agent(t, func(ch, id string) {
+	f.startAgent(t, func(ch, id string) {
 		ctx := context.Background()
 		for _, part := range []string{"Hel", "lo ", "world"} {
 			p := part
@@ -204,7 +213,7 @@ func TestStreaming(t *testing.T) {
 // well-formed SSE response.
 func TestStreamingWithNonStreamingAgent(t *testing.T) {
 	f := setup(t)
-	go f.agent(t, func(ch, id string) {
+	f.startAgent(t, func(ch, id string) {
 		_, err := f.svc.CompleteRequest(context.Background(), ch, "tok", id, openai.Answer{
 			ToolCalls: []openai.ToolCall{{Function: openai.FunctionCall{Name: "get_weather", Arguments: `{"city":"Lagos"}`}}},
 		})
@@ -223,7 +232,7 @@ func TestStreamingWithNonStreamingAgent(t *testing.T) {
 
 func TestAgentFailureMapsToError(t *testing.T) {
 	f := setup(t)
-	go f.agent(t, func(ch, id string) {
+	f.startAgent(t, func(ch, id string) {
 		if err := f.svc.FailRequest(context.Background(), ch, "tok", id, "model unavailable", false); err != nil {
 			t.Error(err)
 		}
@@ -279,7 +288,7 @@ func TestRateLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	// First request consumes the only token; answer it so the call returns.
-	go f.agent(t, func(ch, id string) {
+	f.startAgent(t, func(ch, id string) {
 		_, _ = f.svc.CompleteRequest(ctx, ch, "tok", id, openai.Answer{Content: "ok"})
 	})
 	body := `{"model":"m","messages":[{"role":"user","content":"hi"}]}`

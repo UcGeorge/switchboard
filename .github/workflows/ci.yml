@@ -16,7 +16,12 @@ jobs:
           cache: true
       - run: go vet ./...
       - run: go test -race -count=1 ./...
-      - run: go build ./cmd/switchboard
+      - run: go build -o bin/switchboard ./cmd/switchboard
+      - name: Fresh terminal UI startup
+        if: runner.os != 'Windows'
+        run: |
+          python3 scripts/test_first_run.py bin/switchboard
+          python3 scripts/test_first_run.py bin/switchboard --open
   generated:
     runs-on: ubuntu-latest
     steps:
@@ -29,3 +34,27 @@ jobs:
       - run: test -z "$(gofmt -l cmd internal)"
       - run: python3 scripts/release.py --version ci --target linux/amd64
       - run: python3 scripts/test_installer.py
+
+  website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+        working-directory: website
+      - run: npm run build && npm run check
+        working-directory: website
+
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: python scripts/release.py --version ci --target windows/amd64
+      - run: python scripts/test_installer.py

@@ -1,0 +1,25 @@
+{
+  "name": "switchboard-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check && node scripts/check-links.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.5",
+    "astro": "7.3.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "postcss-selector-parser": "^7.1.6"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

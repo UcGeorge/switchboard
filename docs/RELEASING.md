@@ -48,3 +48,12 @@ Run the installer again to upgrade, or set `SWITCHBOARD_VERSION=0.1.0` to pin.
 Before upgrading, use `switchboard db backup backup.db`. Database migrations
 run automatically. Older binaries may not understand newer schemas: rollback
 requires restoring the matching backup, with the service stopped.
+
+## Documentation website
+
+Enable GitHub Pages with GitHub Actions as its source. The Pages workflow
+builds the landing page and Starlight docs, validates local links, and deploys
+a static artifact. `GITHUB_REPOSITORY` determines the project base path.
+For local review, use `npm ci`, `npm run build`, and `npm run check` in `website`.
+The public site needs no paid hosting. The live application needs a server;
+GitHub Pages cannot run its API or database.
