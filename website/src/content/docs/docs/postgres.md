@@ -5,6 +5,14 @@ description: "Select the PostgreSQL backend, manage its schema and credentials, 
 
 SQLite remains the zero-configuration default. PostgreSQL is an optional persistent backend for operators who already manage a database or prefer a database service. PostgreSQL does not turn Switchboard into a multi-replica service: run one API/MCP server per instance because caller connections and live deltas are held in memory.
 
+## Version requirement
+
+PostgreSQL support is newer than the `v0.1.0` release. Until a release containing
+this backend is published, build the current source with `make build`, use the
+Compose source build below, or install `github.com/ucgeorge/switchboard/cmd/switchboard@main`.
+The `@latest` installer may still resolve to the older tagged release; verify
+`switchboard --help` includes `--database-url` before connecting PostgreSQL.
+
 ## Connect a local binary
 
 ```sh

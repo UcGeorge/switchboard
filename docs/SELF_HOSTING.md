@@ -6,6 +6,9 @@ capacity and idle-instance reclamation mean it is not guaranteed always-on.
 Current official free-tenancy A1 limits are 2 OCPUs/12 GB RAM, as checked on
 8 October 2026: https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
 
+PostgreSQL support is in current main/source builds and is newer than v0.1.0.
+Use the Compose build or build main locally until a matching binary release exists.
+
 ## Compose
 
 Copy `.env.example` to `.env` and set distinct administrator/control credentials.
