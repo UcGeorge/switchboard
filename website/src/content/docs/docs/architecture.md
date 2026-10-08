@@ -3,13 +3,13 @@ title: "Architecture and boundaries"
 description: "Understand the source layout, database ownership, and local/remote command execution."
 ---
 
-The Go executable owns all runtime surfaces. Its `app` package opens SQLite, builds the core service, registers the caller API, MCP transport, OAuth endpoints, management interface, and dashboard, then starts background upkeep and the TUI when enabled.
+The Go executable owns all runtime surfaces. Its `app` package opens the selected SQLite or PostgreSQL backend, builds the core service, registers the caller API, MCP transport, OAuth endpoints, management interface, and dashboard, then starts background upkeep and the TUI when enabled.
 
 ## Request path
 
-Caller HTTP authentication → request validation and limits → SQLite request/conversation transaction → queue signal → MCP atomic claim → agent output → stored completion and event → waiting caller response.
+Caller HTTP authentication → request validation and limits → database request/conversation transaction → queue signal → MCP atomic claim → agent output → stored completion and event → waiting caller response.
 
-Live deltas use an in-process registry. Persistent requests and final answers live in SQLite. The server polls for terminal results written by another CLI process, enabling manual answers without sharing process memory.
+Live deltas use an in-process registry. Persistent requests and final answers live in the selected database. The server polls for terminal results written by another CLI process, enabling manual answers without sharing process memory.
 
 ## Source map
 
@@ -27,7 +27,7 @@ Live deltas use an in-process registry. Persistent requests and final answers li
 
 ## Database and process model
 
-SQLite runs in WAL mode with immediate write transactions and a busy timeout. Claim updates are conditional so concurrent agents do not acquire the same queued request. Only one long-running server may own a database. CLI processes can open it for short management operations.
+SQLite runs in WAL mode with immediate write transactions and a busy timeout. PostgreSQL uses native migrations and transaction-scoped advisory locks for serialized domain writes; shared sqlc queries are adapted at the driver boundary. Claim updates are conditional so concurrent agents do not acquire the same queued request. Only one long-running server may own a database. CLI processes can open it for short management operations.
 
 Remote administration invokes an explicit allowlist of commands in isolated copies of the installed binary, using the server database and bounded output. There is no shell command endpoint. MCP registration and skill installation remain client-local.
 

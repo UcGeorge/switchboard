@@ -22,7 +22,8 @@ func NewStore(d *sql.DB) *Store {
 	return &Store{DB: d, Q: sqlcgen.New(d)}
 }
 
-// WithTx runs fn inside an immediate (write-locked) transaction.
+// WithTx serializes domain transactions using SQLite immediate transactions
+// or a PostgreSQL transaction-scoped advisory lock.
 func (s *Store) WithTx(ctx context.Context, fn func(q *sqlcgen.Queries) error) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {

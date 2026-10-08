@@ -39,6 +39,6 @@ On restart, active requests from the previous server run are cancelled because t
 
 ## Capacity and backpressure
 
-Per-key rate limits and a configurable queue depth return `429` with `Retry-After`. Channel concurrency bounds simultaneous claims. SQLite uses WAL mode and a busy timeout; its single writer limits throughput. This is designed for local agent pools, not a horizontally scaled inference gateway.
+Per-key rate limits and a configurable queue depth return `429` with `Retry-After`. Channel concurrency bounds simultaneous claims. SQLite uses WAL mode and a busy timeout; PostgreSQL uses serialized domain transactions. Both backends currently support one long-running server per instance. This is designed for local agent pools, not a horizontally scaled inference gateway.
 
 Use [observability](../observability/) to distinguish queue time from agent processing time, and [settings](../settings/) to adjust defaults.
