@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/db/sqlcgen"
 )
 
@@ -26,6 +27,12 @@ func (s *Store) WithTx(ctx context.Context, fn func(q *sqlcgen.Queries) error) e
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return err
+	}
+	if db.IsPostgres(s.DB) {
+		if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock(739216402)"); err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 	if err := fn(s.Q.WithTx(tx)); err != nil {
 		_ = tx.Rollback()

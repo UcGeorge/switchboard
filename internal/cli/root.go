@@ -25,11 +25,12 @@ import (
 )
 
 type globals struct {
-	dbPath     string
-	addr       string
-	json       bool
-	url        string
-	adminToken string
+	databaseURL string
+	dbPath      string
+	addr        string
+	json        bool
+	url         string
+	adminToken  string
 }
 
 var g globals
@@ -68,6 +69,7 @@ server with a terminal status screen and the web dashboard.`,
 			return runServe(cmd.Context(), serve)
 		},
 	}
+	root.PersistentFlags().StringVar(&g.databaseURL, "database-url", envOr("SWITCHBOARD_DATABASE_URL", envOr("DATABASE_URL", "")), "PostgreSQL connection URL (prefer environment variable)")
 	root.PersistentFlags().StringVar(&g.dbPath, "db", envOr("SWITCHBOARD_DB", ""), "path to the SQLite database (default ~/.switchboard/switchboard.db)")
 	root.PersistentFlags().StringVar(&g.addr, "addr", envOr("SWITCHBOARD_ADDR", "127.0.0.1:8080"), "listen address of the server")
 	root.PersistentFlags().BoolVar(&g.json, "json", false, "print machine-readable JSON")
@@ -116,6 +118,9 @@ func runServe(ctx context.Context, f serveFlags) error {
 }
 
 func dbPath() string {
+	if g.databaseURL != "" {
+		return g.databaseURL
+	}
 	if g.dbPath != "" {
 		return g.dbPath
 	}
@@ -132,7 +137,7 @@ func withService(fn func(ctx context.Context, svc *core.Service) error) func(cmd
 func runWithService(ctx context.Context, fn func(ctx context.Context, svc *core.Service) error) error {
 	database, err := db.Open(dbPath())
 	if err != nil {
-		return fmt.Errorf("open database %s: %w", dbPath(), err)
+		return fmt.Errorf("open database %s: %w", db.Describe(dbPath()), err)
 	}
 	defer database.Close()
 	svc, err := core.New(database, slog.New(slog.NewTextHandler(io.Discard, nil)))

@@ -1,0 +1,17 @@
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SWITCHBOARD_DOMAIN: ${SWITCHBOARD_DOMAIN:?Set SWITCHBOARD_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      switchboard:
+        condition: service_healthy
+volumes:
+  caddy-data:
+  caddy-config:

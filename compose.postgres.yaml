@@ -1,0 +1,23 @@
+services:
+  switchboard:
+    environment:
+      SWITCHBOARD_DATABASE_URL: "postgresql://switchboard:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD to a hex or URL-safe password}@postgres:5432/switchboard?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: switchboard
+      POSTGRES_USER: switchboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U switchboard -d switchboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  postgres-data:

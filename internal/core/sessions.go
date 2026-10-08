@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/ucgeorge/switchboard/internal/db/sqlcgen"
@@ -29,6 +30,9 @@ func (s *Service) SetPassword(ctx context.Context, password string) error {
 // EnsurePassword generates and stores a random password when none exists.
 // The plaintext is returned only in that case so it can be shown once.
 func (s *Service) EnsurePassword(ctx context.Context) (string, error) {
+	if pw := os.Getenv("SWITCHBOARD_ADMIN_PASSWORD"); pw != "" {
+		return "", s.SetPassword(ctx, pw)
+	}
 	if s.HasPassword() {
 		return "", nil
 	}

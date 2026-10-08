@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
+
 	"strings"
 	"sync"
 	"testing"
@@ -16,8 +16,8 @@ import (
 
 	"github.com/ucgeorge/switchboard/internal/api"
 	"github.com/ucgeorge/switchboard/internal/core"
-	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/openai"
+	"github.com/ucgeorge/switchboard/internal/testdb"
 )
 
 type fixture struct {
@@ -29,10 +29,7 @@ type fixture struct {
 
 func setup(t *testing.T) *fixture {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := testdb.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	svc, err := core.New(d, log)
 	if err != nil {

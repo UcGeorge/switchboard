@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -141,6 +142,14 @@ func (s *Service) reloadSettings(ctx context.Context) error {
 	m := make(map[string]string, len(rows))
 	for _, r := range rows {
 		m[r.Key] = r.Value
+	}
+	for _, def := range SettingDefs {
+		if value := os.Getenv("SWITCHBOARD_" + strings.ToUpper(def.Key)); value != "" {
+			if err := ValidateSetting(def.Key, value); err != nil {
+				return fmt.Errorf("environment setting %s: %w", def.Key, err)
+			}
+			m[def.Key] = value
+		}
 	}
 	s.settings.mu.Lock()
 	s.settings.raw = m

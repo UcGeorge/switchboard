@@ -57,7 +57,11 @@ func Run(ctx context.Context, cfg Config) error {
 		cfg.DBPath = db.DefaultPath()
 	}
 
-	if err := os.MkdirAll(filepath.Dir(cfg.DBPath), 0o700); err != nil {
+	dataDir := filepath.Dir(cfg.DBPath)
+	if db.IsPostgresURL(cfg.DBPath) {
+		dataDir = db.DefaultDataDir()
+	}
+	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return fmt.Errorf("create data directory: %w", err)
 	}
 
@@ -65,7 +69,7 @@ func Run(ctx context.Context, cfg Config) error {
 	var logOut io.Writer = os.Stderr
 	logPath := ""
 	if !cfg.Headless {
-		logPath = filepath.Join(filepath.Dir(cfg.DBPath), "switchboard.log")
+		logPath = filepath.Join(dataDir, "switchboard.log")
 		f, err := openLogFile(logPath)
 		if err != nil {
 			return fmt.Errorf("open log file: %w", err)
@@ -100,7 +104,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	webSrv, err := web.New(svc, log, cfg.DBPath)
+	webSrv, err := web.New(svc, log, db.Describe(cfg.DBPath))
 	if err != nil {
 		ln.Close()
 		svc.Close()
@@ -140,12 +144,12 @@ func Run(ctx context.Context, cfg Config) error {
 	info := tui.Info{
 		Version: version.Version, Instance: svc.Settings().InstanceName,
 		DashboardURL: base, OpenAIURL: base + "/v1", MCPURL: base + "/mcp",
-		DBPath: cfg.DBPath, LogPath: logPath, Password: generatedPassword,
+		DBPath: db.Describe(cfg.DBPath), LogPath: logPath, Password: generatedPassword,
 	}
 	if tok, err := svc.CreateLoginToken(ctx, 15*time.Minute); err == nil {
 		info.LoginURL = svc.LoginLinkURL(tok)
 	}
-	log.Info("switchboard started", "addr", svc.ListenAddr, "db", cfg.DBPath, "version", version.Version)
+	log.Info("switchboard started", "addr", svc.ListenAddr, "db", db.Describe(cfg.DBPath), "version", version.Version)
 
 	if cfg.Open {
 		target := info.LoginURL

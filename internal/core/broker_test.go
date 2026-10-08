@@ -4,21 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/db/sqlcgen"
 	"github.com/ucgeorge/switchboard/internal/openai"
+	"github.com/ucgeorge/switchboard/internal/testdb"
 )
 
 func newTestService(t *testing.T) *Service {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
+	d := testdb.Open(t)
 	svc, err := New(d, nil)
 	if err != nil {
 		t.Fatalf("new service: %v", err)

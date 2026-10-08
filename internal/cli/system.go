@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/ucgeorge/switchboard/internal/core"
+	"github.com/ucgeorge/switchboard/internal/db"
 )
 
 func eventsCmd() *cobra.Command {
@@ -247,7 +248,7 @@ func dbCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "db", Short: "Database maintenance"}
 	cmd.AddCommand(&cobra.Command{
 		Use: "path", Short: "Print the database path",
-		Run: func(cmd *cobra.Command, args []string) { fmt.Println(dbPath()) },
+		Run: func(cmd *cobra.Command, args []string) { fmt.Println(db.Describe(dbPath())) },
 	})
 	cmd.AddCommand(&cobra.Command{
 		Use: "backup <file>", Short: "Write a consistent snapshot of the database to a file", Args: cobra.ExactArgs(1),
@@ -256,7 +257,7 @@ func dbCmd() *cobra.Command {
 				return fmt.Errorf("%s already exists", args[0])
 			}
 			return runWithService(cmd.Context(), func(ctx context.Context, svc *core.Service) error {
-				if _, err := svc.DB.ExecContext(ctx, "VACUUM INTO ?", args[0]); err != nil {
+				if err := db.Backup(ctx, svc.DB, dbPath(), args[0]); err != nil {
 					return err
 				}
 				fmt.Println("backup written to", args[0])

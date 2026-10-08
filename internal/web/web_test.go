@@ -8,14 +8,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path/filepath"
+
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ucgeorge/switchboard/internal/core"
-	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/openai"
+	"github.com/ucgeorge/switchboard/internal/testdb"
 )
 
 type webFixture struct {
@@ -32,10 +32,7 @@ type webFixture struct {
 func newFixture(t *testing.T) *webFixture {
 	t.Helper()
 	ctx := context.Background()
-	d, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := testdb.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	svc, err := core.New(d, log)
 	if err != nil {

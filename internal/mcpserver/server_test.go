@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
+
 	"strings"
 	"testing"
 	"time"
@@ -15,10 +15,10 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/ucgeorge/switchboard/internal/core"
-	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/db/sqlcgen"
 	"github.com/ucgeorge/switchboard/internal/mcpserver"
 	"github.com/ucgeorge/switchboard/internal/openai"
+	"github.com/ucgeorge/switchboard/internal/testdb"
 )
 
 // These tests drive the server through the real MCP client transport, so the
@@ -44,10 +44,7 @@ type fixture struct {
 
 func setup(t *testing.T) *fixture {
 	t.Helper()
-	d, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := testdb.Open(t)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	svc, err := core.New(d, log)
 	if err != nil {

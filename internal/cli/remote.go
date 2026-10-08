@@ -74,8 +74,8 @@ func remotePreRun(cmd *cobra.Command, args []string) error {
 	if _, err := remoteBase(); err != nil {
 		return err
 	}
-	if g.dbPath != "" {
-		return fmt.Errorf("--db cannot be combined with --url")
+	if g.dbPath != "" || g.databaseURL != "" {
+		return fmt.Errorf("local database selection (--db/--database-url) cannot be combined with --url")
 	}
 	path := strings.Fields(cmd.CommandPath())
 	path = path[1:]
@@ -101,7 +101,7 @@ func remotePreRun(cmd *cobra.Command, args []string) error {
 	argv = append(argv, args...)
 	cmd.Flags().Visit(func(f *pflag.Flag) {
 		switch f.Name {
-		case "url", "admin-token", "db", "addr", "file", "force":
+		case "url", "admin-token", "database-url", "db", "addr", "file", "force":
 			if f.Name == "force" {
 				argv = append(argv, "--force="+f.Value.String())
 			}

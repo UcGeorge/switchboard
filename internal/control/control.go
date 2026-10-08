@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ucgeorge/switchboard/internal/core"
+	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/secret"
 )
 
@@ -60,7 +61,7 @@ func Allowed(args []string) bool {
 		if len(a) > 1<<20 {
 			return false
 		}
-		for _, f := range []string{"--db", "--addr", "--url", "--admin-token", "--file", "--headless", "--open"} {
+		for _, f := range []string{"--db", "--database-url", "--addr", "--url", "--admin-token", "--file", "--headless", "--open"} {
 			if a == f || strings.HasPrefix(a, f+"=") {
 				return false
 			}
@@ -120,12 +121,17 @@ func (s *Server) command(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	args := append([]string{"--db", s.DBPath, "--addr", r.Host}, in.Args...)
+	args := append([]string{"--addr", r.Host}, in.Args...)
 	cmd := exec.CommandContext(ctx, binary, args...)
 	for _, v := range os.Environ() {
-		if !strings.HasPrefix(v, "SWITCHBOARD_URL=") && !strings.HasPrefix(v, "SWITCHBOARD_ADMIN_TOKEN=") {
+		if !strings.HasPrefix(v, "SWITCHBOARD_DB=") && !strings.HasPrefix(v, "DATABASE_URL=") && !strings.HasPrefix(v, "SWITCHBOARD_DATABASE_URL=") && !strings.HasPrefix(v, "SWITCHBOARD_URL=") && !strings.HasPrefix(v, "SWITCHBOARD_ADMIN_TOKEN=") {
 			cmd.Env = append(cmd.Env, v)
 		}
+	}
+	if db.IsPostgresURL(s.DBPath) {
+		cmd.Env = append(cmd.Env, "SWITCHBOARD_DATABASE_URL="+s.DBPath)
+	} else {
+		cmd.Env = append(cmd.Env, "SWITCHBOARD_DB="+s.DBPath)
 	}
 	var stdout, stderr limitedBuffer
 	cmd.Stdout = &stdout
@@ -160,7 +166,7 @@ func (s *Server) backup(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(dir)
 	path := dir + "/backup.db"
-	if _, err = s.Service.DB.ExecContext(r.Context(), "VACUUM INTO ?", path); err != nil {
+	if err = db.Backup(r.Context(), s.Service.DB, s.DBPath, path); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}

@@ -3,12 +3,12 @@ package control
 import (
 	"context"
 	"github.com/ucgeorge/switchboard/internal/core"
-	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/db/sqlcgen"
 	"github.com/ucgeorge/switchboard/internal/secret"
+	"github.com/ucgeorge/switchboard/internal/testdb"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
+
 	"strings"
 	"testing"
 )
@@ -26,10 +26,7 @@ func TestAllowlist(t *testing.T) {
 	}
 }
 func TestAuthentication(t *testing.T) {
-	d, e := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if e != nil {
-		t.Fatal(e)
-	}
+	d := testdb.Open(t)
 	defer d.Close()
 	s, e := core.New(d, nil)
 	if e != nil {

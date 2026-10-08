@@ -45,6 +45,9 @@ func DefaultPath() string {
 // for concurrent local use (WAL, busy timeout, immediate transactions) and
 // applies pending migrations.
 func Open(path string) (*sql.DB, error) {
+	if IsPostgresURL(path) {
+		return openPostgres(path)
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("create data dir: %w", err)
 	}
@@ -85,6 +88,9 @@ func Open(path string) (*sql.DB, error) {
 
 // Migrate applies any migration files not yet recorded in schema_migrations.
 func Migrate(ctx context.Context, d *sql.DB) error {
+	if IsPostgres(d) {
+		return migratePostgres(ctx, d)
+	}
 	if _, err := d.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
 		version TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)`); err != nil {
 		return fmt.Errorf("init migrations table: %w", err)

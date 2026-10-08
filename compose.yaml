@@ -1,0 +1,34 @@
+name: switchboard
+services:
+  switchboard:
+    image: ${SWITCHBOARD_IMAGE:-switchboard:local}
+    build: .
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 20s
+    command: [serve, --headless]
+    ports:
+      - "${SWITCHBOARD_BIND_IP:-127.0.0.1}:${SWITCHBOARD_PORT:-8080}:8080"
+    environment:
+      SWITCHBOARD_ADDR: 0.0.0.0:8080
+      SWITCHBOARD_DATA_DIR: /data
+      SWITCHBOARD_DB: /data/switchboard.db
+      SWITCHBOARD_DATABASE_URL: ${SWITCHBOARD_DATABASE_URL:-}
+      SWITCHBOARD_PUBLIC_URL: ${SWITCHBOARD_PUBLIC_URL:-}
+      SWITCHBOARD_CONTROL_TOKEN: ${SWITCHBOARD_CONTROL_TOKEN:-}
+      SWITCHBOARD_ADMIN_PASSWORD: ${SWITCHBOARD_ADMIN_PASSWORD:-}
+      SWITCHBOARD_LOG_LEVEL: ${SWITCHBOARD_LOG_LEVEL:-info}
+      SWITCHBOARD_REQUEST_TIMEOUT_SECONDS: ${SWITCHBOARD_REQUEST_TIMEOUT_SECONDS:-600}
+      SWITCHBOARD_LEASE_SECONDS: ${SWITCHBOARD_LEASE_SECONDS:-120}
+      SWITCHBOARD_CHANNEL_STALE_SECONDS: ${SWITCHBOARD_CHANNEL_STALE_SECONDS:-90}
+      SWITCHBOARD_RETENTION_DAYS: ${SWITCHBOARD_RETENTION_DAYS:-30}
+    volumes:
+      - switchboard-data:/data
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1:8080/healthz]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+volumes:
+  switchboard-data:
