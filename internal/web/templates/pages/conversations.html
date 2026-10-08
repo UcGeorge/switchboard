@@ -1,0 +1,25 @@
+{{define "content"}}
+<form class="card" method="get" action="/conversations">
+  <div class="card-b filters">
+    <input class="input search" type="search" name="q" value="{{.Filter.Search}}" placeholder="Search titles…">
+    <select class="select" name="api_key_id" onchange="this.form.submit()"><option value="">Any key</option>{{range .Keys}}<option value="{{.ID}}" {{if eq .ID $.Filter.APIKeyID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    <button class="btn btn-sm">Search</button>
+    <a class="btn btn-ghost btn-sm" href="/conversations">Clear</a>
+    <span class="grow"></span>
+    <span class="small muted">Conversations are reconstructed from the history each request carries, so one chat in your app appears as one thread here.</span>
+  </div>
+</form>
+<div class="card"><div class="card-b tight" id="conversations" hx-get="/conversations?{{.Pager.Base}}page={{.Pager.Page}}" hx-select="#conversations" hx-trigger="sb:requests from:body throttle:3s" hx-swap="outerHTML">
+<div class="table-wrap"><table class="table">
+<thead><tr><th>Conversation</th><th>Key</th><th>Model</th><th class="num">Turns</th><th class="num">Started</th><th class="num">Last activity</th></tr></thead>
+<tbody>{{range .Rows}}<tr class="clickable" onclick="location.href='/conversations/{{.ID}}'">
+  <td><a href="/conversations/{{.ID}}" class="cell-primary">{{.Title}}</a><span class="cell-sub mono">{{.ID}}</span></td>
+  <td>{{or .KeyName "(deleted)"}}</td>
+  <td><span class="chip">{{.Model}}</span></td>
+  <td class="num">{{.TurnCount}}</td>
+  <td class="num muted nowrap">{{ts .CreatedAt}}</td>
+  <td class="num muted nowrap"><span data-ts="{{.UpdatedAt}}">{{ago .UpdatedAt}}</span></td>
+</tr>{{else}}<tr><td colspan="6">{{template "empty" (dict "icon" "chat" "title" "No conversations yet" "text" "Threads appear once requests start flowing.")}}</td></tr>{{end}}</tbody></table></div>
+{{if .Pager.Total}}<div class="table-foot"><span>{{n .Pager.Total}} conversation{{if ne .Pager.Total 1}}s{{end}}</span>{{template "pager" .Pager}}</div>{{end}}
+</div></div>
+{{end}}

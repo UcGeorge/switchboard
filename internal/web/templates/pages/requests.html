@@ -1,0 +1,14 @@
+{{define "content"}}
+<form class="card" method="get" action="/requests" hx-get="/requests/table" hx-target="#requests-table" hx-swap="outerHTML" hx-trigger="change, keyup changed delay:300ms from:input[name=q], submit" hx-push-url="false">
+  <div class="card-b filters">
+    <input class="input search" type="search" name="q" value="{{.Filter.Search}}" placeholder="Search id, prompt or answer…">
+    <select class="select" name="status"><option value="">Any status</option>{{range .Statuses}}<option value="{{.}}" {{if eq . $.Filter.Status}}selected{{end}}>{{.}}</option>{{end}}</select>
+    <select class="select" name="api_key_id"><option value="">Any key</option>{{range .Keys}}<option value="{{.ID}}" {{if eq .ID $.Filter.APIKeyID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    <select class="select" name="channel_id"><option value="">Any channel</option>{{range .Channels}}<option value="{{.ID}}" {{if eq .ID $.Filter.ChannelID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    <select class="select" name="model"><option value="">Any model</option>{{range .Models}}<option value="{{.}}" {{if eq . $.Filter.Model}}selected{{end}}>{{.}}</option>{{end}}</select>
+    {{if .Filter.ConversationID}}<input type="hidden" name="conversation_id" value="{{.Filter.ConversationID}}"><span class="chip">conversation {{trimConv .Filter.ConversationID}} <a href="/requests">×</a></span>{{end}}
+    <a class="btn btn-ghost btn-sm" href="/requests">Clear</a>
+  </div>
+</form>
+<div class="card"><div class="card-b tight">{{template "request-table" .Table}}</div></div>
+{{end}}

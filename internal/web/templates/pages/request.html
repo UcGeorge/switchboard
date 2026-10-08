@@ -1,0 +1,78 @@
+{{define "actions"}}<div class="row">
+  {{if isActive .R.Status}}
+    <button class="btn btn-sm btn-primary" hx-get="/requests/{{.R.ID}}/answer" hx-target="#modal">{{template "icon" "send"}} Answer manually</button>
+    {{if ne .R.Status "queued"}}<form hx-post="/requests/{{.R.ID}}/requeue" hx-confirm="Return this request to the queue?" data-confirm="Return this request to the queue? If output was already streamed it will fail instead."><button class="btn btn-sm">{{template "icon" "refresh"}} Requeue</button></form>{{end}}
+    <form hx-post="/requests/{{.R.ID}}/cancel" hx-confirm="Cancel this request? The caller receives an error." data-confirm="Cancel this request? The caller receives an error."><button class="btn btn-sm btn-danger">{{template "icon" "ban"}} Cancel</button></form>
+  {{end}}
+  {{if .Conversation}}<a class="btn btn-sm" href="/conversations/{{.Conversation.ID}}">{{template "icon" "chat"}} Conversation</a>{{end}}
+</div>{{end}}
+
+{{define "content"}}<div id="request-{{.R.ID}}" hx-get="/requests/{{.R.ID}}" hx-trigger="sb:request:{{.R.ID}} from:body throttle:1s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+<div class="grid cols-4">
+  <div class="card stat"><div class="label">Status</div><div class="value" style="font-size:18px">{{template "status" .R.Status}}</div><div class="foot">{{if .R.ErrorMessage}}<span style="color:var(--red)">{{deref .R.ErrorMessage}}</span>{{else if eq .R.Status "queued"}}waiting <span data-since="{{.R.CreatedAt}}"></span>{{else if .R.FinishReason}}finish: {{deref .R.FinishReason}}{{else}}attempt {{.R.Attempts}}{{end}}</div></div>
+  <div class="card stat"><div class="label">Latency</div><div class="value">{{if .R.CompletedAt}}{{dur .R.LatencyMs}}{{else}}<span data-since="{{.R.CreatedAt}}"></span>{{end}}</div><div class="foot">queue {{if .R.ClaimedAt}}{{dur .R.QueueMs}}{{else}}—{{end}} · TTFT {{if .R.FirstTokenAt}}{{dur .R.TTFTMs}}{{else}}—{{end}}</div></div>
+  <div class="card stat"><div class="label">Tokens {{if .R.UsageEstimated}}<span class="chip tiny" title="estimated from text length">est.</span>{{end}}</div><div class="value">{{n (add .R.PromptTokens .R.CompletionTokens)}}</div><div class="foot">{{n .R.PromptTokens}} prompt · {{n .R.CompletionTokens}} completion</div></div>
+  <div class="card stat"><div class="label">Served by</div><div class="value" style="font-size:18px">{{if .Channel}}<a href="/channels/{{.Channel.ID}}">{{.Channel.Name}}</a>{{else}}<span class="muted">—</span>{{end}}</div><div class="foot">key <a href="/requests?api_key_id={{.R.ApiKeyID}}">{{or .R.KeyName "(deleted)"}}</a>{{if .Channel}} · {{.Channel.Status}}{{end}}</div></div>
+</div>
+
+<div class="grid cols-3 align-start">
+  <div class="card span-2">
+    <div class="card-h"><h2>Conversation</h2><span class="sub">{{len .Messages}} messages in context · model <span class="chip">{{.R.Model}}</span>{{if .R.Stream}} · <span class="chip">stream</span>{{end}}</span></div>
+    <div class="card-b thread">
+      {{range .Messages}}{{template "message" .}}{{end}}
+      {{if .HasAnswer}}
+        <div class="turn-sep"><span>answer</span></div>
+        {{template "message" (dict "Role" "assistant" "Text" .Answer.Content "ToolCalls" .Answer.ToolCalls "Name" "" "ToolCallID" "")}}
+      {{else if .Live}}
+        <div class="turn-sep"><span>{{if eq .R.Status "streaming"}}streaming{{else}}claimed · waiting for output{{end}}</span></div>
+        <div class="msg assistant"><div class="who">A</div><div class="body"><div class="bubble live-output" data-live-output="{{.R.ID}}" data-autoscroll style="max-height:420px;overflow:auto">{{if .LiveText}}{{.LiveText}}{{else}}<span class="placeholder faint">…</span>{{end}}<span class="cursor"></span></div></div></div>
+      {{else if eq .R.Status "queued"}}
+        <div class="turn-sep"><span>queued</span></div>
+        <div class="msg assistant"><div class="who">A</div><div class="body"><div class="bubble empty">Waiting for an agent to claim this request{{if .Remaining}} (times out in {{.Remaining}}){{end}}.</div></div></div>
+      {{else if .R.ErrorMessage}}
+        <div class="turn-sep"><span>{{.R.Status}}</span></div>
+        <div class="flash err">{{deref .R.ErrorMessage}}</div>
+      {{end}}
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <div class="card-h"><h2>Details</h2></div>
+      <div class="card-b"><dl class="kv compact">
+        <dt>Request id</dt><dd class="mono">{{.R.ID}} <button class="btn btn-xs btn-ghost" data-copy="{{.R.ID}}">copy</button></dd>
+        <dt>Completion id</dt><dd class="mono">{{.CompletionID}}</dd>
+        {{if .Conversation}}<dt>Conversation</dt><dd class="mono"><a href="/conversations/{{.Conversation.ID}}">{{.Conversation.ID}}</a> · turn {{add .R.TurnIndex 1}}</dd>{{end}}
+        <dt>Endpoint</dt><dd class="mono">{{.R.Endpoint}}</dd>
+        <dt>Created</dt><dd>{{ts .R.CreatedAt}}</dd>
+        <dt>Claimed</dt><dd>{{tsp .R.ClaimedAt}}</dd>
+        <dt>First token</dt><dd>{{tsp .R.FirstTokenAt}}</dd>
+        <dt>Completed</dt><dd>{{tsp .R.CompletedAt}}</dd>
+        <dt>Timeout</dt><dd>{{.Timeout}}{{if .Remaining}} · {{.Remaining}} left{{end}}</dd>
+        {{if .R.LeaseExpiresAt}}<dt>Lease</dt><dd>until {{tsp .R.LeaseExpiresAt}}</dd>{{end}}
+        <dt>Attempts</dt><dd>{{.R.Attempts}} / {{.R.MaxAttempts}}</dd>
+        <dt>Priority</dt><dd>{{.R.Priority}}</dd>
+        <dt>Caller</dt><dd class="mono small">{{.R.ClientIp}}<br><span class="muted">{{.R.UserAgent}}</span></dd>
+      </dl></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Timeline</h2></div>
+      <div class="card-b">{{template "timeline" .Events}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card" data-tabs>
+  <div class="tabs">
+    <button type="button" class="active" data-tab="params">Parameters</button>
+    <button type="button" data-tab="req">Request JSON</button>
+    <button type="button" data-tab="res">Response JSON</button>
+  </div>
+  <div class="card-b">
+    <div class="tab-panel active" data-panel="params">{{if and .Params (ne .Params "{}")}}<pre class="code">{{.Params}}<button class="btn btn-xs copy" data-copy>Copy</button></pre>{{else}}<div class="muted small">No extra generation parameters were sent.</div>{{end}}</div>
+    <div class="tab-panel" data-panel="req"><pre class="code" style="max-height:480px">{{.RequestJSON}}<button class="btn btn-xs copy" data-copy>Copy</button></pre></div>
+    <div class="tab-panel" data-panel="res">{{if .ResponseJSON}}<pre class="code" style="max-height:480px">{{.ResponseJSON}}<button class="btn btn-xs copy" data-copy>Copy</button></pre>{{else}}<div class="muted small">No response yet.</div>{{end}}</div>
+  </div>
+</div>
+{{end}}

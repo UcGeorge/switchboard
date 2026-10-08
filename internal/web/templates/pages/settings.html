@@ -1,0 +1,50 @@
+{{define "content"}}
+<div class="grid cols-3">
+  <form class="card span-2" method="post" action="/settings">
+    <input type="hidden" name="_csrf" value="{{.CSRF}}">
+    <div class="card-h"><h2>Runtime settings</h2><span class="sub">applied immediately, stored in the database</span></div>
+    <div class="card-b form-grid">
+      {{range .Defs}}{{$v := index $.Values .Key}}
+      <div class="field {{if eq .Type "string"}}full{{end}}">
+        <label>{{.Label}}</label>
+        {{if eq .Type "bool"}}<label class="field inline"><input type="checkbox" name="{{.Key}}" value="true" {{if or (eq $v "true") (eq $v "1")}}checked{{end}}> <span class="small">{{.Description}}</span></label>
+        {{else if eq .Type "int"}}<input class="input" type="number" min="0" name="{{.Key}}" value="{{$v}}"><span class="hint">{{.Description}}</span>
+        {{else}}<input class="input" name="{{.Key}}" value="{{$v}}" placeholder="{{.Default}}"><span class="hint">{{.Description}}</span>{{end}}
+      </div>{{end}}
+    </div>
+    <div class="card-f row end"><button class="btn btn-primary">Save settings</button></div>
+  </form>
+
+  <div class="stack">
+    <form class="card" method="post" action="/settings/password">
+      <input type="hidden" name="_csrf" value="{{.CSRF}}">
+      <div class="card-h"><h2>Dashboard password</h2></div>
+      <div class="card-b stack">
+        {{if not .HasPassword}}<div class="flash warn">No password set.</div>{{end}}
+        <div class="field"><label>New password</label><input class="input" type="password" name="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label>Confirm</label><input class="input" type="password" name="confirm" minlength="8" autocomplete="new-password" required></div>
+      </div>
+      <div class="card-f row end"><button class="btn">Update password</button></div>
+    </form>
+
+    <div class="card">
+      <div class="card-h"><h2>Sessions</h2></div>
+      <div class="card-b small muted">Sign out every browser, including this one. One-time login links from the terminal keep working.</div>
+      <div class="card-f row end"><form method="post" action="/settings/sessions/revoke"><input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="btn btn-danger btn-sm">Sign out everywhere</button></form></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h2>Instance</h2></div>
+      <div class="card-b"><dl class="kv" style="grid-template-columns:110px 1fr">
+        <dt>Version</dt><dd class="mono">{{.Version}}</dd>
+        <dt>Go</dt><dd class="mono">{{.GoVersion}}</dd>
+        <dt>Uptime</dt><dd>{{.Uptime}}</dd>
+        <dt>Database</dt><dd class="mono small">{{.DBPath}}</dd>
+        <dt>Base URL</dt><dd class="mono small">{{.BaseURL}}</dd>
+        <dt>Tracked</dt><dd>{{.LiveCount}} live request(s) in memory</dd>
+      </dl></div>
+      <div class="card-f row end"><form method="post" action="/settings/prune"><input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="btn btn-sm">Run retention cleanup now</button></form></div>
+    </div>
+  </div>
+</div>
+{{end}}

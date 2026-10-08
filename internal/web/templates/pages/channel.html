@@ -1,0 +1,46 @@
+{{define "actions"}}<div class="row">
+  {{if not .C.Closed}}
+    <button class="btn btn-sm" hx-get="/channels/{{.C.ID}}/edit" hx-target="#modal">{{template "icon" "edit"}} Edit</button>
+    {{if eq .C.Status "draining"}}<form hx-post="/channels/{{.C.ID}}/resume"><button class="btn btn-sm">{{template "icon" "play"}} Resume</button></form>
+    {{else}}<form hx-post="/channels/{{.C.ID}}/drain"><button class="btn btn-sm">{{template "icon" "pause"}} Drain</button></form>{{end}}
+    <form hx-post="/channels/{{.C.ID}}/close" hx-confirm="Close this channel? In-flight requests are requeued." data-confirm="Close this channel? In-flight requests are requeued."><button class="btn btn-sm btn-danger">{{template "icon" "ban"}} Close</button></form>
+  {{else}}
+    <form hx-post="/channels/{{.C.ID}}/delete" hx-confirm="Delete this channel record?" data-confirm="Delete this channel record?"><button class="btn btn-sm btn-danger">{{template "icon" "trash"}} Delete</button></form>
+  {{end}}
+</div>{{end}}
+
+{{define "content"}}<div id="channel-{{.C.ID}}" hx-get="/channels/{{.C.ID}}" hx-trigger="sb:channel:{{.C.ID}} from:body throttle:2s, sb:channels from:body throttle:2s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+<div class="grid cols-5">
+  <div class="card stat"><div class="label">Status</div><div class="value" style="font-size:18px"><span class="badge st-{{if .C.Closed}}closed{{else}}{{.C.Status}}{{end}}">{{if .C.Closed}}closed{{else}}{{.C.Status}}{{end}}</span></div><div class="foot">seen <span data-ts="{{.C.LastSeenAt}}">{{ago .C.LastSeenAt}}</span></div></div>
+  <div class="card stat blue"><div class="label">In flight</div><div class="value">{{.C.InFlight}}<small>/ {{.C.Concurrency}}</small></div><div class="foot">concurrency limit</div></div>
+  <div class="card stat green"><div class="label">Served</div><div class="value">{{n .C.ServedCount}}</div><div class="foot">{{n .C.FailedCount}} failed · all time</div></div>
+  <div class="card stat"><div class="label">Avg latency</div><div class="value">{{if .C.ServedCount}}{{dur .C.AvgLatencyMs}}{{else}}—{{end}}</div><div class="foot">end to end</div></div>
+  <div class="card stat {{if and .Total (lt .SuccessRate 95.0)}}red{{else}}green{{end}}"><div class="label">Last 24h</div><div class="value">{{if .Total}}{{pct .SuccessRate}}{{else}}—{{end}}</div><div class="foot">{{n .Total}} requests · {{n .Completed}} ok · {{n .Failed}} failed</div></div>
+</div>
+
+<div class="grid cols-3 align-start">
+  <div class="card">
+    <div class="card-h"><h2>Channel</h2></div>
+    <div class="card-b"><dl class="kv">
+      <dt>Name</dt><dd><b>{{.C.Name}}</b></dd>
+      {{if .C.Description}}<dt>Description</dt><dd>{{.C.Description}}</dd>{{end}}
+      <dt>Id</dt><dd class="mono">{{.C.ID}} <button class="btn btn-xs btn-ghost" data-copy="{{.C.ID}}">copy</button></dd>
+      <dt>Models</dt><dd>{{range .C.ModelList}}<span class="chip{{if eq . "*"}} accent{{end}}">{{if eq . "*"}}any{{else}}{{.}}{{end}}</span> {{end}}</dd>
+      <dt>Agent token</dt><dd>{{if .C.TokenName}}<a href="/agents">{{.C.TokenName}}</a>{{else}}<span class="muted">none (manual)</span>{{end}}</dd>
+      <dt>Opened</dt><dd>{{ts .C.CreatedAt}}</dd>
+      {{if .C.ClosedAt}}<dt>Closed</dt><dd>{{ts (derefI .C.ClosedAt)}}</dd>{{end}}
+    </dl></div>
+  </div>
+  <div class="card span-2">
+    <div class="card-h"><h2>Recent events</h2><a class="btn btn-ghost btn-sm" href="/events?channel_id={{.C.ID}}">All</a></div>
+    <div class="card-b">{{template "timeline" .Events}}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h2>Requests served by this channel</h2><a class="btn btn-ghost btn-sm" href="/requests?channel_id={{.C.ID}}">Filter view {{template "icon" "arrow-right"}}</a></div>
+  <div class="card-b tight">{{template "request-table" .Requests}}</div>
+</div>
+{{end}}

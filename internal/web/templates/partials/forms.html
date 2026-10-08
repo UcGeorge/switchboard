@@ -1,0 +1,86 @@
+{{define "modal-key-form"}}<div class="modal-backdrop"><form class="modal" hx-post="{{.Action}}" hx-target="#modal" hx-swap="innerHTML">
+  <div class="card-h"><h2>{{if .Edit}}Edit API key{{else}}Create API key{{end}}</h2><button type="button" class="btn btn-ghost btn-icon" data-close-modal>{{template "icon" "x"}}</button></div>
+  <div class="card-b stack">
+    {{if .Error}}<div class="flash err">{{.Error}}</div>{{end}}
+    <div class="form-grid">
+      <div class="field full"><label>Name</label><input class="input" name="name" value="{{.Name}}" placeholder="my-chat-app" required maxlength="80"><span class="hint">Shown in request history so you can tell callers apart.</span></div>
+      <div class="field"><label>Rate limit (req/min)</label><input class="input" type="number" min="0" name="rate_limit_rpm" value="{{.RateLimitRPM}}"><span class="hint">0 = use the default from Settings.</span></div>
+      <div class="field"><label>Timeout (seconds)</label><input class="input" type="number" min="0" name="timeout_seconds" value="{{.TimeoutSeconds}}"><span class="hint">0 = default. How long callers wait for an answer.</span></div>
+      <div class="field"><label>Priority</label><input class="input" type="number" name="priority" value="{{.Priority}}"><span class="hint">Higher is claimed first.</span></div>
+      <div class="field"><label>Pin to channel</label><select class="select" name="pinned_channel_id"><option value="">Any channel</option>{{range .Channels}}<option value="{{.ID}}" {{if eq .ID $.PinnedChannelID}}selected{{end}}>{{.Name}}{{if .Closed}} (closed){{end}}</option>{{end}}</select></div>
+      <div class="field full"><label>Allowed models</label><input class="input" name="allowed_models" value="{{.AllowedModels}}" placeholder="gpt-4o, claude-*, switchboard/auto"><span class="hint">Comma separated, globs allowed. Empty = any model.</span></div>
+    </div>
+  </div>
+  <div class="card-f row end"><button type="button" class="btn" data-close-modal>Cancel</button><button class="btn btn-primary">{{if .Edit}}Save{{else}}Create key{{end}}</button></div>
+</form></div>{{end}}
+
+{{define "modal-key-created"}}<div class="modal-backdrop"><div class="modal">
+  <div class="card-h"><h2>API key created</h2><button type="button" class="btn btn-ghost btn-icon" data-close-modal>{{template "icon" "x"}}</button></div>
+  <div class="card-b stack">
+    <div class="flash warn">{{template "icon" "alert"}} Copy it now — this is the only time the full key is shown.</div>
+    <div class="secret-box"><code id="new-key">{{.Key}}</code><button class="btn btn-sm" data-copy="{{.Key}}">{{template "icon" "copy"}} Copy</button></div>
+    <div class="small muted">Use it as <code>Authorization: Bearer …</code> against <code>{{.BaseURL}}/v1</code>. Example:</div>
+    <pre class="code">OPENAI_BASE_URL={{.BaseURL}}/v1 OPENAI_API_KEY={{.Key}} \
+  python -c 'from openai import OpenAI; print(OpenAI().chat.completions.create(model="switchboard/auto", messages=[{"role":"user","content":"hello"}]).choices[0].message.content)'</pre>
+  </div>
+  <div class="card-f row end"><a class="btn btn-primary" href="/keys">Done</a></div>
+</div></div>{{end}}
+
+{{define "modal-token-form"}}<div class="modal-backdrop"><form class="modal" hx-post="/agents/tokens" hx-target="#modal" hx-swap="innerHTML">
+  <div class="card-h"><h2>Create agent token</h2><button type="button" class="btn btn-ghost btn-icon" data-close-modal>{{template "icon" "x"}}</button></div>
+  <div class="card-b stack">
+    {{if .Error}}<div class="flash err">{{.Error}}</div>{{end}}
+    <div class="field"><label>Name</label><input class="input" name="name" value="{{.Name}}" placeholder="claude-code" required maxlength="80"><span class="hint">Which agent or machine will use it. Static tokens never expire; revoke them here when done.</span></div>
+  </div>
+  <div class="card-f row end"><button type="button" class="btn" data-close-modal>Cancel</button><button class="btn btn-primary">Create token</button></div>
+</form></div>{{end}}
+
+{{define "modal-token-created"}}<div class="modal-backdrop"><div class="modal wide">
+  <div class="card-h"><h2>Agent token created</h2><button type="button" class="btn btn-ghost btn-icon" data-close-modal>{{template "icon" "x"}}</button></div>
+  <div class="card-b stack">
+    <div class="flash warn">{{template "icon" "alert"}} Copy it now — the full token is shown only once.</div>
+    <div class="secret-box"><code>{{.Token}}</code><button class="btn btn-sm" data-copy="{{.Token}}">{{template "icon" "copy"}} Copy</button></div>
+    <h3>Connect an agent</h3>
+    <div class="field"><label>Claude Code</label><pre class="code">claude mcp add --transport http switchboard {{.MCPURL}} --header "Authorization: Bearer {{.Token}}"<button class="btn btn-xs copy" data-copy='claude mcp add --transport http switchboard {{.MCPURL}} --header "Authorization: Bearer {{.Token}}"'>Copy</button></pre></div>
+    <div class="field"><label>Cursor / Windsurf / generic mcp.json</label><pre class="code">{
+  "mcpServers": {
+    "switchboard": {
+      "url": "{{.MCPURL}}",
+      "headers": { "Authorization": "Bearer {{.Token}}" }
+    }
+  }
+}<button class="btn btn-xs copy" data-copy>Copy</button></pre></div>
+    <div class="small muted">Then tell the agent: <em>“Use the Switchboard MCP: call open_channel, then loop on claim_request and answer each request.”</em> — or install the skill with <code>switchboard skill install</code>.</div>
+  </div>
+  <div class="card-f row end"><a class="btn btn-primary" href="/agents">Done</a></div>
+</div></div>{{end}}
+
+{{define "modal-channel-form"}}<div class="modal-backdrop"><form class="modal" hx-post="/channels/{{.ID}}/edit" hx-target="#modal" hx-swap="innerHTML">
+  <div class="card-h"><h2>Edit channel</h2><button type="button" class="btn btn-ghost btn-icon" data-close-modal>{{template "icon" "x"}}</button></div>
+  <div class="card-b stack">
+    {{if .Error}}<div class="flash err">{{.Error}}</div>{{end}}
+    <div class="form-grid">
+      <div class="field full"><label>Name</label><input class="input" name="name" value="{{.Name}}" required maxlength="80"></div>
+      <div class="field full"><label>Description</label><input class="input" name="description" value="{{.Description}}"></div>
+      <div class="field"><label>Models served</label><input class="input" name="models" value="{{.Models}}" placeholder="*"><span class="hint">Comma separated; * = any.</span></div>
+      <div class="field"><label>Concurrency</label><input class="input" type="number" min="1" max="256" name="concurrency" value="{{.Concurrency}}"></div>
+    </div>
+    <div class="small muted">The agent's next open_channel call overrides these values.</div>
+  </div>
+  <div class="card-f row end"><button type="button" class="btn" data-close-modal>Cancel</button><button class="btn btn-primary">Save</button></div>
+</form></div>{{end}}
+
+{{define "modal-answer-form"}}<div class="modal-backdrop"><form class="modal wide" hx-post="/requests/{{.RequestID}}/answer" hx-target="#modal" hx-swap="innerHTML">
+  <div class="card-h"><h2>Answer request manually</h2><button type="button" class="btn btn-ghost btn-icon" data-close-modal>{{template "icon" "x"}}</button></div>
+  <div class="card-b stack">
+    {{if .Error}}<div class="flash err">{{.Error}}</div>{{end}}
+    <div class="small muted">You become the model for <span class="chip">{{.Model}}</span> on this request. The caller receives exactly what you type.</div>
+    <div class="msg user"><div class="who">U</div><div class="body"><div class="bubble" style="max-height:160px;overflow:auto">{{.Prompt}}</div></div></div>
+    <div class="field"><label>Assistant reply</label><textarea class="textarea" name="content" rows="8" placeholder="Type the assistant's answer…" required>{{.Content}}</textarea></div>
+    <div class="row wrap">
+      <div class="field"><label>finish_reason</label><select class="select sm" name="finish_reason"><option value="stop">stop</option><option value="length">length</option><option value="content_filter">content_filter</option></select></div>
+      {{if .Held}}<label class="field inline small"><input type="checkbox" name="force" value="1"> Take over from <span class="chip">{{.HeldBy}}</span></label>{{end}}
+    </div>
+  </div>
+  <div class="card-f row end"><button type="button" class="btn" data-close-modal>Cancel</button><button class="btn btn-primary">{{template "icon" "send"}} Send answer</button></div>
+</form></div>{{end}}

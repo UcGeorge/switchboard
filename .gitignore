@@ -1,0 +1,14 @@
+/bin/
+/dist/
+*.db
+*.db-wal
+*.db-shm
+*.log
+.DS_Store
+/tmp/
+coverage.out
+
+.vscode/
+.env
+.env.*
+!.env.example

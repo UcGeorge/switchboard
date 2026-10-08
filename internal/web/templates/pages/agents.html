@@ -1,0 +1,55 @@
+{{define "actions"}}<div class="row"><button class="btn btn-sm btn-primary" hx-get="/agents/tokens/new" hx-target="#modal">{{template "icon" "plus"}} New agent token</button></div>{{end}}
+
+{{define "content"}}<div id="agents" hx-get="/agents" hx-trigger="sb:agents from:body throttle:2s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+<div class="grid cols-2">
+  <div class="card">
+    <div class="card-h"><h2>Connect with a token</h2><span class="sub">Claude Code, Cursor, Windsurf, scripts</span></div>
+    <div class="card-b stack">
+      <div class="small muted">Create a token, then register the MCP server with it. The agent authenticates with <code>Authorization: Bearer …</code>.</div>
+      <pre class="code">claude mcp add --transport http switchboard {{.MCPURL}} \
+  --header "Authorization: Bearer &lt;token&gt;"<button class="btn btn-xs copy" data-copy='claude mcp add --transport http switchboard {{.MCPURL}} --header "Authorization: Bearer <token>"'>Copy</button></pre>
+      <div class="small muted">Or from the CLI in one step: <code>switchboard mcp add claude-code</code>. Install the serving skill with <code>switchboard skill install</code> so the agent knows the loop.</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Connect with OAuth</h2><span class="sub">Claude Desktop/claude.ai connectors, VS Code, MCP Inspector</span></div>
+    <div class="card-b stack">
+      <div class="small muted">Clients that support OAuth discover this server automatically. Add the MCP URL as a custom connector; you will be asked to sign in here and approve the client. Tokens issued this way appear below.</div>
+      <pre class="code">{{.MCPURL}}<button class="btn btn-xs copy" data-copy="{{.MCPURL}}">Copy</button></pre>
+      <div class="small muted">Metadata: <a href="{{.BaseURL}}/.well-known/oauth-authorization-server" target="_blank">authorization server</a> · <a href="{{.BaseURL}}/.well-known/oauth-protected-resource" target="_blank">protected resource</a>. Hosted clients (claude.ai) need a public URL — set it in Settings when using a tunnel.</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h2>Agent tokens</h2><span class="sub">bearer credentials accepted by /mcp</span></div>
+  <div class="card-b tight"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Name</th><th>Kind</th><th>Token</th><th>Status</th><th>Channels</th><th class="num">Last used</th><th class="num">Expires</th><th></th></tr></thead>
+  <tbody>{{range .Tokens}}<tr>
+    <td><span class="cell-primary">{{.Name}}</span><span class="cell-sub mono">{{.ID}}</span></td>
+    <td>{{if eq .Kind "oauth"}}<span class="chip">oauth</span>{{if .ClientName}} <span class="small muted">{{.ClientName}}</span>{{end}}{{else}}<span class="chip">static</span>{{end}}</td>
+    <td class="mono">{{.TokenPrefix}}</td>
+    <td>{{if .Revoked}}<span class="badge st-revoked">revoked</span>{{else if .Expired}}<span class="badge st-expired">expired</span>{{else}}<span class="badge st-active">active</span>{{end}}</td>
+    <td class="small">{{if .Channels}}{{joinList .Channels ", "}}{{else}}<span class="faint">—</span>{{end}}</td>
+    <td class="num muted nowrap">{{if .LastUsedAt}}<span data-ts="{{derefI .LastUsedAt}}">{{ago (derefI .LastUsedAt)}}</span>{{else}}never{{end}}</td>
+    <td class="num muted nowrap">{{if .ExpiresAt}}{{ts (derefI .ExpiresAt)}}{{else}}never{{end}}</td>
+    <td class="actions">{{if not .Revoked}}<form hx-post="/agents/tokens/{{.ID}}/revoke" hx-confirm="Revoke this token?" data-confirm="Revoke this token? The agent will be disconnected."><button class="btn btn-xs btn-danger">Revoke</button></form>{{else}}<form hx-post="/agents/tokens/{{.ID}}/delete"><button class="btn btn-xs btn-ghost">Delete</button></form>{{end}}</td>
+  </tr>{{else}}<tr><td colspan="8">{{template "empty" (dict "icon" "bot" "title" "No agent tokens" "text" "Create one, or let an OAuth client register itself.")}}</td></tr>{{end}}</tbody></table></div></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h2>OAuth clients</h2><span class="sub">registered via dynamic client registration</span></div>
+  <div class="card-b tight"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Client</th><th>Auth</th><th>Redirect URIs</th><th class="num">Tokens</th><th class="num">Registered</th><th></th></tr></thead>
+  <tbody>{{range .Clients}}<tr>
+    <td><span class="cell-primary">{{.Name}}</span><span class="cell-sub mono">{{.ID}}</span></td>
+    <td><span class="chip">{{.TokenEndpointAuthMethod}}</span></td>
+    <td class="mono small">{{range .RedirectURIs}}{{.}}<br>{{end}}</td>
+    <td class="num">{{.TokenCount}}</td>
+    <td class="num muted nowrap">{{ts .CreatedAt}}</td>
+    <td class="actions"><form hx-post="/agents/clients/{{.ID}}/delete" hx-confirm="Remove this client registration?" data-confirm="Remove this client registration?"><button class="btn btn-xs btn-danger">Remove</button></form></td>
+  </tr>{{else}}<tr><td colspan="6"><div class="empty small">No OAuth clients have registered yet.</div></td></tr>{{end}}</tbody></table></div></div>
+</div>
+{{end}}

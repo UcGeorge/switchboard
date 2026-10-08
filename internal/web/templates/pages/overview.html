@@ -1,0 +1,78 @@
+{{define "actions"}}<div class="row">
+  <span class="small muted">Window</span>
+  <div class="pager">{{range .Windows}}<a href="/?w={{.Value}}" class="{{if .Active}}cur{{end}}">{{.Label}}</a>{{end}}</div>
+</div>{{end}}
+
+{{define "content"}}<div id="overview" hx-get="/?w={{.WindowKey}}" hx-trigger="sb:stats from:body throttle:3s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+{{if or .NoKeys .NoChannels}}<div class="card"><div class="card-b">
+  <div class="row between wrap">
+    <div><h2>Get connected</h2><div class="muted small">Two things make Switchboard useful: a caller with an API key and at least one agent serving requests.</div></div>
+  </div>
+  <div class="grid cols-2" style="margin-top:14px">
+    <div class="card" style="background:var(--surface-2)"><div class="card-b row between">
+      <div><b>{{if .NoKeys}}1. Create an API key{{else}}✓ API keys ready{{end}}</b><div class="muted small">Give it to any OpenAI-compatible app with base URL <code>{{.BaseURL}}/v1</code>.</div></div>
+      {{if .NoKeys}}<button class="btn btn-primary btn-sm" hx-get="/keys/new" hx-target="#modal">{{template "icon" "plus"}} New key</button>{{else}}<a class="btn btn-sm" href="/keys">Keys</a>{{end}}
+    </div></div>
+    <div class="card" style="background:var(--surface-2)"><div class="card-b row between">
+      <div><b>{{if .NoChannels}}2. Connect an agent{{else}}✓ Agents connected{{end}}</b><div class="muted small">Create an agent token and add <code>{{.BaseURL}}/mcp</code> to Claude Code, Cursor, or any MCP client.</div></div>
+      {{if .NoChannels}}<a class="btn btn-primary btn-sm" href="/agents">{{template "icon" "bot"}} Agents</a>{{else}}<a class="btn btn-sm" href="/channels">Channels</a>{{end}}
+    </div></div>
+  </div>
+</div></div>{{end}}
+
+<div class="grid cols-6">
+  <div class="card stat {{if .O.Queued}}accent{{end}}"><div class="label">{{template "icon" "inbox"}} Queued</div><div class="value">{{.O.Queued}}</div><div class="foot">waiting for an agent</div></div>
+  <div class="card stat blue"><div class="label">{{template "icon" "zap"}} In flight</div><div class="value">{{.O.InFlight}}</div><div class="foot">being answered</div></div>
+  <div class="card stat {{if .O.ChannelsOnline}}green{{else}}red{{end}}"><div class="label">{{template "icon" "radio"}} Channels</div><div class="value">{{.O.ChannelsOnline}}<small>/ {{.O.ChannelsOpen}} online</small></div><div class="foot">{{if .O.ChannelsOnline}}agents serving{{else}}no agent connected{{end}}</div></div>
+  <div class="card stat"><div class="label">{{template "icon" "activity"}} Requests · {{windowLabel .O.Window}}</div><div class="value">{{n .O.Total}}</div><div class="foot">{{f2 .O.RPM}} / min</div></div>
+  <div class="card stat {{if and .O.Total (lt .O.SuccessRate 95.0)}}red{{else}}green{{end}}"><div class="label">{{template "icon" "check"}} Success</div><div class="value">{{if .O.Total}}{{pct .O.SuccessRate}}{{else}}—{{end}}</div><div class="foot">{{n .O.Completed}} ok · {{n .O.Failed}} failed · {{n .O.Dropped}} dropped</div></div>
+  <div class="card stat"><div class="label">{{template "icon" "clock"}} Latency p50 / p95</div><div class="value">{{if .O.LatencySamples}}{{dur .O.P50Ms}}<small>{{dur .O.P95Ms}}</small>{{else}}—{{end}}</div><div class="foot">TTFT p50 {{if .O.LatencySamples}}{{dur .O.TTFTP50Ms}}{{else}}—{{end}} · queue p50 {{if .O.LatencySamples}}{{dur .O.QueueP50Ms}}{{else}}—{{end}}</div></div>
+</div>
+
+<div class="grid cols-3">
+  <div class="card span-2">
+    <div class="card-h"><h2>Throughput</h2><span class="sub">last {{windowLabel .O.Window}} · {{n .O.PromptTokens}} prompt / {{n .O.CompletionTokens}} completion tokens</span>
+      <div class="chart-legend"><span><i style="background:var(--green)"></i>completed</span><span><i style="background:var(--red)"></i>failed</span><span><i style="background:var(--surface-2);border:1px solid var(--line)"></i>other</span></div></div>
+    <div class="card-b">{{if .Chart.Max}}{{template "chart" .Chart}}{{else}}<div class="empty"><b>No traffic in this window</b><span>Charts fill in as requests arrive.</span></div>{{end}}</div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Channels</h2><a class="btn btn-ghost btn-sm" href="/channels">All</a></div>
+    <div class="card-b tight">
+      {{if .Channels}}<table class="table"><tbody>{{range .Channels}}<tr>
+        <td><a href="/channels/{{.ID}}" class="cell-primary">{{.Name}}</a><span class="cell-sub">{{joinList .ModelList ", "}}</span></td>
+        <td class="num"><span class="muted small">{{.InFlight}}/{{.Concurrency}}</span></td>
+        <td class="right"><span class="badge st-{{.Status}}">{{.Status}}</span></td>
+      </tr>{{end}}</tbody></table>
+      {{else}}{{template "empty" (dict "icon" "radio" "title" "No channels" "text" "Connect an agent over MCP to start serving.")}}{{end}}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h"><h2>Recent requests</h2><a class="btn btn-ghost btn-sm" href="/requests">All requests {{template "icon" "arrow-right"}}</a></div>
+  <div class="card-b tight">{{template "request-table" .Recent}}</div>
+</div>
+
+<div class="grid cols-3 align-start">
+  <div class="card">
+    <div class="card-h"><h2>Models</h2><span class="sub">{{windowLabel .O.Window}}</span></div>
+    <div class="card-b tight">{{if .Models}}<table class="table"><tbody>{{range .Models}}<tr>
+      <td><span class="chip">{{.Name}}</span></td><td class="num">{{n .Total}}</td>
+      <td style="width:40%"><div class="progress"><i style="width:{{f .Share}}%"></i></div></td>
+      <td class="num muted small">{{n .Prompt}}/{{n .Compl}}</td></tr>{{end}}</tbody></table>{{else}}<div class="empty small">No usage yet</div>{{end}}</div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>API keys</h2><span class="sub">{{windowLabel .O.Window}}</span></div>
+    <div class="card-b tight">{{if .Keys}}<table class="table"><tbody>{{range .Keys}}<tr>
+      <td class="nowrap"><a href="/requests?api_key_id={{.ID}}" class="cell-primary">{{.Name}}</a></td><td class="num">{{n .Total}}</td>
+      <td style="width:40%"><div class="progress blue"><i style="width:{{f .Share}}%"></i></div></td>
+      <td class="num muted small">{{n .Completed}} ok</td></tr>{{end}}</tbody></table>{{else}}<div class="empty small">No usage yet</div>{{end}}</div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Activity</h2><a class="btn btn-ghost btn-sm" href="/events">All</a></div>
+    <div class="card-b">{{template "timeline" .Events}}</div>
+  </div>
+</div>
+{{end}}

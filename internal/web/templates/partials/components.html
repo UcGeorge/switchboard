@@ -1,0 +1,101 @@
+{{define "stats-strip"}}<div id="stats-strip" class="gauges">
+  <span class="gauge {{if .Queued}}warn{{end}}" title="Requests waiting for an agent"><b>{{.Queued}}</b> queued</span>
+  <span class="gauge" title="Requests being answered"><b>{{.InFlight}}</b> in flight</span>
+  <span class="gauge {{if .Online}}good{{else}}bad{{end}}" title="Agent channels online"><b>{{.Online}}</b> online</span>
+</div>{{end}}
+
+{{define "status"}}<span class="badge st-{{.}}">{{.}}</span>{{end}}
+
+{{define "empty"}}<div class="empty">{{template "icon" (or .icon "inbox")}}<b>{{.title}}</b>{{if .text}}<span>{{.text}}</span>{{end}}</div>{{end}}
+
+{{define "pager"}}{{if gt .Pages 1}}<nav class="pager">
+  {{if gt .Page 1}}<a href="{{.URL .Prev}}">‹ Prev</a>{{else}}<span class="disabled">‹ Prev</span>{{end}}
+  {{range .Range}}{{if eq . $.Page}}<span class="cur">{{.}}</span>{{else}}<a href="{{$.URL .}}">{{.}}</a>{{end}}{{end}}
+  {{if lt .Page .Pages}}<a href="{{.URL .Next}}">Next ›</a>{{else}}<span class="disabled">Next ›</span>{{end}}
+</nav>{{end}}{{end}}
+
+{{define "request-table"}}<div id="{{.ID}}" {{if .URL}}hx-get="{{.URL}}" hx-trigger="sb:requests from:body" hx-swap="outerHTML"{{end}}>
+<div class="table-wrap"><table class="table">
+<thead><tr>
+  <th>Request</th><th>Status</th><th>Model</th>
+  {{if or .ShowKey .ShowChannel}}<th>{{if .ShowKey}}Key{{end}}{{if and .ShowKey .ShowChannel}} → {{end}}{{if .ShowChannel}}channel{{end}}</th>{{end}}
+  <th>Prompt and answer</th>
+  <th class="num">Latency</th><th class="num">Tokens</th>
+</tr></thead>
+<tbody>
+{{range .Rows}}<tr class="clickable" onclick="location.href='/requests/{{.ID}}'">
+  <td class="nowrap"><a href="/requests/{{.ID}}" class="cell-primary mono">{{trimReq .ID}}</a><span class="cell-sub"><span data-ts="{{.CreatedAt}}" title="{{ts .CreatedAt}}">{{ago .CreatedAt}}</span>{{if .ConversationID}} · <a href="/conversations/{{deref .ConversationID}}" onclick="event.stopPropagation()" title="Open conversation {{deref .ConversationID}}">turn {{add .TurnIndex 1}}</a>{{end}}</span></td>
+  <td class="nowrap">{{template "status" .Status}}{{if .Stream}} <span class="chip tiny" title="Caller asked for a streamed response">sse</span>{{end}}{{if gt .Attempts 1}} <span class="chip tiny" title="Claim attempts">×{{.Attempts}}</span>{{end}}</td>
+  <td><span class="chip">{{.Model}}</span></td>
+  {{if or $.ShowKey $.ShowChannel}}<td class="nowrap">
+    {{if $.ShowKey}}{{if .KeyName}}<a class="cell-primary" href="/requests?api_key_id={{.ApiKeyID}}" onclick="event.stopPropagation()">{{.KeyName}}</a>{{else}}<span class="cell-primary faint">deleted key</span>{{end}}{{end}}
+    {{if $.ShowChannel}}<span class="cell-sub">{{if $.ShowKey}}→ {{end}}{{if .ChannelID}}<a href="/channels/{{deref .ChannelID}}" onclick="event.stopPropagation()">{{or .ChannelName (deref .ChannelID)}}</a>{{else}}<span class="faint">unclaimed</span>{{end}}</span>{{end}}
+  </td>{{end}}
+  <td class="fill"><div class="preview" title="{{.Prompt}}">{{.Prompt}}</div>{{if .Answer}}<div class="preview muted small" title="{{.Answer}}">↳ {{.Answer}}</div>{{else if .ErrorMessage}}<div class="preview small err-text" title="{{deref .ErrorMessage}}">{{deref .ErrorMessage}}</div>{{else if isActive .Status}}<div class="preview faint small">{{if eq .Status "queued"}}waiting for an agent…{{else}}being answered…{{end}}</div>{{end}}</td>
+  <td class="num nowrap">
+    <span class="cell-primary">{{if .CompletedAt}}{{dur .LatencyMs}}{{else if isActive .Status}}<span class="muted" data-since="{{.CreatedAt}}"></span>{{else}}—{{end}}</span>
+    <span class="cell-sub" title="time in queue · time to first token">{{if .ClaimedAt}}queue {{dur .QueueMs}}{{else}}queue —{{end}}{{if .FirstTokenAt}} · ttft {{dur .TTFTMs}}{{end}}</span>
+  </td>
+  <td class="num nowrap muted" title="prompt / completion tokens{{if .UsageEstimated}} (estimated from text length){{end}}">{{n .PromptTokens}}<span class="faint"> / </span>{{n .CompletionTokens}}{{if .UsageEstimated}}<span class="faint"> ~</span>{{end}}</td>
+</tr>{{else}}<tr><td colspan="7">{{template "empty" (dict "title" (or .EmptyText "No requests") "text" "Point an OpenAI client at this server and they will show up here.")}}</td></tr>{{end}}
+</tbody></table></div>
+{{if .Pager.Total}}<div class="table-foot"><span>{{n .Pager.Total}} request{{if ne .Pager.Total 1}}s{{end}}</span>{{template "pager" .Pager}}</div>{{end}}
+</div>{{end}}
+
+{{define "channel-cards"}}{{range .}}<div class="card channel-card" id="channel-card-{{.ID}}">
+  <div class="row between">
+    <a class="name" href="/channels/{{.ID}}">{{.Name}}</a>
+    <span class="badge st-{{if .Closed}}closed{{else}}{{.Status}}{{end}}">{{if .Closed}}closed{{else}}{{.Status}}{{end}}</span>
+  </div>
+  {{if .Description}}<div class="small muted">{{.Description}}</div>{{end}}
+  <div class="models">{{range .ModelList}}<span class="chip{{if eq . "*"}} accent{{end}}">{{if eq . "*"}}any model{{else}}{{.}}{{end}}</span>{{end}}</div>
+  <div class="metrics">
+    <div><b>{{.InFlight}}<span class="muted" style="font-size:12px">/{{.Concurrency}}</span></b>in flight</div>
+    <div><b>{{n .ServedCount}}</b>served</div>
+    <div><b>{{if .ServedCount}}{{dur .AvgLatencyMs}}{{else}}—{{end}}</b>avg latency</div>
+  </div>
+  <div class="foot"><span>{{if .TokenName}}{{template "icon" "bot"}} {{.TokenName}}{{else}}<span class="faint">no token</span>{{end}}</span><span title="{{ts .LastSeenAt}}">seen <span data-ts="{{.LastSeenAt}}">{{ago .LastSeenAt}}</span></span></div>
+</div>{{end}}{{end}}
+
+{{define "event-table"}}<div id="{{.ID}}" {{if .URL}}hx-get="{{.URL}}" hx-trigger="sb:events from:body throttle:2s" hx-swap="outerHTML"{{end}}>
+<div class="table-wrap"><table class="table">
+<thead><tr><th>Time</th><th>Kind</th><th>Message</th><th>Links</th></tr></thead>
+<tbody>
+{{range .Rows}}<tr>
+  <td class="mono muted nowrap" title="{{ts .Ts}}">{{tsShort .Ts}}</td>
+  <td class="nowrap"><span class="badge plain lvl-{{.Level}}">{{.Kind}}</span></td>
+  <td class="fill">{{.Message}}{{if .DataPretty}}<div class="small faint mono truncate" title="{{.DataPretty}}">{{.DataPretty}}</div>{{end}}</td>
+  <td class="mono small nowrap">
+    {{if .RequestID}}<a href="/requests/{{deref .RequestID}}">{{trimReq (deref .RequestID)}}</a>{{end}}
+    {{if .ChannelID}} <a href="/channels/{{deref .ChannelID}}">channel</a>{{end}}
+    {{if .ConversationID}} <a href="/conversations/{{deref .ConversationID}}">thread</a>{{end}}
+  </td>
+</tr>{{else}}<tr><td colspan="4">{{template "empty" (dict "icon" "activity" "title" "No events yet")}}</td></tr>{{end}}
+</tbody></table></div>
+{{if .Pager.Total}}<div class="table-foot"><span>{{n .Pager.Total}} event{{if ne .Pager.Total 1}}s{{end}}</span>{{template "pager" .Pager}}</div>{{end}}
+</div>{{end}}
+
+{{define "timeline"}}<div class="timeline">{{range .}}<div class="tl {{if eq .Level "warn"}}warn{{else if eq .Level "error"}}error{{else if or (eq .Kind "request.completed") (eq .Kind "channel.online") (eq .Kind "channel.opened")}}ok{{end}}">
+  <div class="t">{{tsShort .Ts}} <span class="faint">· {{.Kind}}</span></div>
+  <div class="m">{{.Message}}</div>
+  {{if .DataPretty}}<div class="d" title="{{.DataPretty}}">{{.DataPretty}}</div>{{end}}
+</div>{{else}}<div class="muted small">No events recorded.</div>{{end}}</div>{{end}}
+
+{{define "message"}}<div class="msg {{.Role}}">
+  <div class="who" title="{{.Role}}">{{roleAbbr .Role}}</div>
+  <div class="body">
+    <div class="meta"><b>{{.Role}}</b>{{if .Name}}<span class="chip">{{.Name}}</span>{{end}}{{if .ToolCallID}}<span class="chip" title="tool_call_id">{{.ToolCallID}}</span>{{end}}</div>
+    {{if .Text}}<div class="bubble">{{.Text}}</div>{{else if not .ToolCalls}}<div class="bubble empty">(empty)</div>{{end}}
+    {{range .ToolCalls}}<div class="toolcall"><b>{{.Function.Name}}</b>({{.Function.Arguments}}) <span class="faint">{{.ID}}</span></div>{{end}}
+  </div>
+</div>{{end}}
+
+{{define "chart"}}<svg class="chart" viewBox="0 0 {{.W}} {{.H}}" preserveAspectRatio="none" aria-label="Requests over time">
+  <line class="axis" x1="0" y1="{{sub .H 18}}" x2="{{.W}}" y2="{{sub .H 18}}"/>
+  {{range .Bars}}<g><title>{{.Label}}: {{.Total}} requests, {{.Completed}} completed, {{.Failed}} failed</title>
+    <rect class="bar-total" x="{{f .X}}" y="{{f .Y}}" width="{{f .W}}" height="{{f .H}}" rx="1.5"/>
+    {{if .Completed}}<rect class="bar-ok" x="{{f .X}}" y="{{f .YOk}}" width="{{f .W}}" height="{{f .HOk}}" rx="1.5"/>{{end}}
+    {{if .Failed}}<rect class="bar-fail" x="{{f .X}}" y="{{f .YFail}}" width="{{f .W}}" height="{{f .HFail}}" rx="1.5"/>{{end}}
+  </g>{{end}}
+  {{range .Labels}}<text class="lbl" x="{{f .X}}" y="{{sub $.H 5}}" text-anchor="middle">{{.Text}}</text>{{end}}
+</svg>{{end}}

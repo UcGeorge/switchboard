@@ -1,0 +1,29 @@
+{{define "actions"}}<div class="row"><a class="btn btn-sm" href="/agents">{{template "icon" "bot"}} Connect an agent</a></div>{{end}}
+
+{{define "content"}}<div id="channels" hx-get="/channels" hx-trigger="sb:channels from:body throttle:2s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+{{if .Open}}<div class="grid cols-3">{{template "channel-cards" .Open}}</div>
+{{else}}<div class="card"><div class="card-b">{{template "empty" (dict "icon" "radio" "title" "No channels yet" "text" "A channel is one connected agent instance. Agents create them by calling open_channel over MCP.")}}
+  <div class="center"><a class="btn btn-primary" href="/agents">Set up an agent</a></div></div></div>{{end}}
+
+<div class="card">
+  <div class="card-h"><h2>How channels work</h2></div>
+  <div class="card-b muted small">
+    Each agent that connects to <code>{{.MCPURL}}</code> calls <code>open_channel</code> and then pulls work with <code>claim_request</code>. Requests are not pushed: the next free channel that serves the requested model claims the oldest, highest-priority request. A channel with no activity for the configured stale period goes <span class="badge st-offline">offline</span> and its in-flight requests are returned to the queue. Use <b>drain</b> to stop a channel from taking new work while it finishes what it holds.
+  </div>
+</div>
+
+{{if .Closed}}<div class="card">
+  <div class="card-h"><h2>Closed channels</h2><span class="sub">{{len .Closed}}</span></div>
+  <div class="card-b tight"><table class="table"><thead><tr><th>Name</th><th>Models</th><th class="num">Served</th><th class="num">Failed</th><th class="num">Avg latency</th><th class="num">Closed</th><th></th></tr></thead><tbody>
+  {{range .Closed}}<tr>
+    <td><a href="/channels/{{.ID}}">{{.Name}}</a>{{if .TokenName}}<span class="cell-sub">{{.TokenName}}</span>{{end}}</td>
+    <td>{{range .ModelList}}<span class="chip">{{.}}</span> {{end}}</td>
+    <td class="num">{{n .ServedCount}}</td><td class="num">{{n .FailedCount}}</td>
+    <td class="num">{{if .ServedCount}}{{dur .AvgLatencyMs}}{{else}}—{{end}}</td>
+    <td class="num muted">{{if .ClosedAt}}<span data-ts="{{derefI .ClosedAt}}">{{ago (derefI .ClosedAt)}}</span>{{end}}</td>
+    <td class="actions"><form hx-post="/channels/{{.ID}}/delete" hx-confirm="Delete this channel record?" data-confirm="Delete this channel record? Its request history keeps the id."><button class="btn btn-xs btn-danger">Delete</button></form></td>
+  </tr>{{end}}</tbody></table></div>
+</div>{{end}}
+{{end}}

@@ -1,0 +1,83 @@
+{{define "content"}}
+<div class="doc">
+  <div class="card"><div class="card-b">
+    <h2 style="margin-top:0">How Switchboard works</h2>
+    <p>Switchboard looks like an OpenAI API to your applications and like an MCP server to your agents. Every chat completion an app sends is stored as a request in an outbox. Agents connected over MCP claim requests, produce the assistant's reply, and Switchboard returns that reply to the app as a normal OpenAI response (streaming included). Nothing leaves this machine unless you expose it.</p>
+    <div class="grid cols-3" style="margin-top:12px">
+      <div class="card" style="background:var(--surface-2)"><div class="stat"><div class="label">1 · App</div><div class="small">calls <code>POST /v1/chat/completions</code> with an API key</div></div></div>
+      <div class="card" style="background:var(--surface-2)"><div class="stat"><div class="label">2 · Switchboard</div><div class="small">queues the request, links it to its conversation, waits</div></div></div>
+      <div class="card" style="background:var(--surface-2)"><div class="stat"><div class="label">3 · Agent</div><div class="small"><code>claim_request</code> → answer → <code>complete_request</code></div></div></div>
+    </div>
+  </div></div>
+
+  <div class="card"><div class="card-b">
+    <h2 style="margin-top:0">Point an application here</h2>
+    <p>{{if .HasKeys}}Use any key from <a href="/keys">API keys</a>.{{else}}First <a href="/keys">create an API key</a>.{{end}} Then set the base URL and key wherever the app configures OpenAI:</p>
+    <pre class="code">export OPENAI_BASE_URL={{.OpenAIURL}}
+export OPENAI_API_KEY=sk-sb-…<button class="btn btn-xs copy" data-copy="export OPENAI_BASE_URL={{.OpenAIURL}}">Copy</button></pre>
+    <h3>curl</h3>
+    <pre class="code">curl {{.OpenAIURL}}/chat/completions \
+  -H "Authorization: Bearer sk-sb-…" -H "Content-Type: application/json" \
+  -d '{"model":"switchboard/auto","messages":[{"role":"user","content":"Hello!"}]}'<button class="btn btn-xs copy" data-copy>Copy</button></pre>
+    <h3>Python (openai)</h3>
+    <pre class="code">from openai import OpenAI
+client = OpenAI(base_url="{{.OpenAIURL}}", api_key="sk-sb-…")
+stream = client.chat.completions.create(
+    model="switchboard/auto",
+    messages=[{"role": "user", "content": "Hello!"}],
+    stream=True,
+)
+for chunk in stream:
+    print(chunk.choices[0].delta.content or "", end="")<button class="btn btn-xs copy" data-copy>Copy</button></pre>
+    <h3>Node (openai)</h3>
+    <pre class="code">import OpenAI from "openai";
+const client = new OpenAI({ baseURL: "{{.OpenAIURL}}", apiKey: "sk-sb-…" });
+const res = await client.chat.completions.create({ model: "switchboard/auto", messages: [{ role: "user", content: "Hello!" }] });
+console.log(res.choices[0].message.content);<button class="btn btn-xs copy" data-copy>Copy</button></pre>
+    <h3>Supported endpoints</h3>
+    <ul>
+      <li><code>POST /v1/chat/completions</code> — streaming and non-streaming, tools/tool_calls, response_format, all params forwarded to the agent.</li>
+      <li><code>POST /v1/completions</code> — legacy prompt API, converted to a chat request.</li>
+      <li><code>GET /v1/models</code>, <code>GET /v1/models/{id}</code> — advertised models plus anything an online channel declares.</li>
+      <li><code>GET /v1/requests/{id}</code> — Switchboard extension: poll the state of a request you submitted.</li>
+    </ul>
+    <p>Model names are free-form: a request for <code>gpt-4o</code> is served by any channel that declared <code>gpt-4o</code>, a matching glob, or <code>*</code>. Responses carry <code>x-switchboard-request-id</code> and <code>x-switchboard-conversation-id</code> headers so you can find them here.</p>
+  </div></div>
+
+  <div class="card"><div class="card-b">
+    <h2 style="margin-top:0">Connect an agent</h2>
+    <p>{{if .HasTokens}}Use a token from <a href="/agents">Agents</a>{{else}}<a href="/agents">Create an agent token</a>{{end}} and register the MCP server at <code>{{.MCPURL}}</code>. OAuth-capable clients can add the URL directly and will be sent here to approve access.</p>
+    <div class="steps">
+      <div class="step"><div><b>Register the server</b><pre class="code" style="margin-top:6px">claude mcp add --transport http switchboard {{.MCPURL}} --header "Authorization: Bearer &lt;token&gt;"<button class="btn btn-xs copy" data-copy='claude mcp add --transport http switchboard {{.MCPURL}} --header "Authorization: Bearer <token>"'>Copy</button></pre><span class="small muted">or <code>switchboard mcp add claude-code</code> / <code>switchboard mcp config cursor</code></span></div></div>
+      <div class="step"><div><b>Give the agent the serving loop</b><div class="small muted">Use the MCP prompt <code>serve</code>, read resource <code>switchboard://guide</code>, or install the skill: <code>switchboard skill install</code>. The loop is: <code>open_channel</code> once → <code>claim_request</code> (wait 25s) → reply with <code>stream_delta</code>/<code>complete_request</code> → repeat.</div></div></div>
+      <div class="step"><div><b>Watch it work</b><div class="small muted">The channel appears under <a href="/channels">Channels</a>; each answered request shows who served it, time to first token and total latency.</div></div></div>
+    </div>
+    <h3>MCP tools</h3>
+    <table class="table"><tbody>
+      <tr><td class="mono">open_channel</td><td>Register this agent instance (name, models, concurrency). Returns channel_id.</td></tr>
+      <tr><td class="mono">claim_request</td><td>Long-poll for the next request routed to the channel. Returns messages, params, deadline.</td></tr>
+      <tr><td class="mono">stream_delta</td><td>Send partial text/tool calls to the caller immediately; renews the lease.</td></tr>
+      <tr><td class="mono">complete_request</td><td>Deliver the final answer (content, tool_calls, finish_reason, usage).</td></tr>
+      <tr><td class="mono">fail_request / release_request</td><td>Hand the request back (retryable) or fail it for the caller.</td></tr>
+      <tr><td class="mono">extend_lease · heartbeat · get_request · queue_status · list_channels · close_channel</td><td>Housekeeping and visibility.</td></tr>
+    </tbody></table>
+  </div></div>
+
+  <div class="card"><div class="card-b">
+    <h2 style="margin-top:0">Reliability model</h2>
+    <ul>
+      <li><b>Durable outbox.</b> Requests live in SQLite; a claim is an atomic update. Nothing is lost if an agent disconnects.</li>
+      <li><b>Leases.</b> A claimed request must see progress (stream_delta, extend_lease or completion) within the lease; otherwise it is returned to the queue for another agent, up to <i>max attempts</i>.</li>
+      <li><b>No duplicate output.</b> Once an agent has streamed tokens to a caller, the request is never re-run by another agent; it fails instead.</li>
+      <li><b>Deadlines.</b> Each request carries a timeout (per key or global). Callers get a 504 when it elapses; agents see the deadline in the claim.</li>
+      <li><b>Caller disconnects</b> cancel the request so agents stop working on it.</li>
+      <li><b>Backpressure.</b> Per-key rate limits (429), a maximum queue depth, and per-channel concurrency.</li>
+    </ul>
+  </div></div>
+
+  <div class="card"><div class="card-b">
+    <h2 style="margin-top:0">Reaching it from elsewhere</h2>
+    <p>Switchboard binds to localhost by default. To let a hosted client (claude.ai, a phone, another machine) reach it, put it behind a tunnel or a TLS reverse proxy — e.g. <code>cloudflared tunnel --url {{.BaseURL}}</code>, <code>ngrok http 8080</code>, or Tailscale Serve — then set <b>Public URL</b> in <a href="/settings">Settings</a> so OAuth metadata and MCP resource identifiers use the external address. The dashboard remains password-protected; API keys and agent tokens are unchanged.</p>
+  </div></div>
+</div>
+{{end}}

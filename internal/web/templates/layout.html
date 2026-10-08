@@ -1,0 +1,57 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · {{.Instance}}</title>
+<meta name="csrf" content="{{.CSRF}}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%23f5b942'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+<script src="/static/vendor/htmx.min.js?v={{.Version}}" defer></script>
+<script src="/static/app.js?v={{.Version}}" defer></script>
+</head>
+<body data-live="1">
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span><span>{{.Instance}}</span><small>{{.Version}}</small></div>
+    <nav class="nav">
+      <a href="/" class="{{if eq .Nav "home"}}active{{end}}">{{template "icon" "home"}} Overview</a>
+      <a href="/requests" class="{{if eq .Nav "requests"}}active{{end}}">{{template "icon" "inbox"}} Requests {{if .Counts.Queued}}<span class="count">{{.Counts.Queued}} queued</span>{{end}}</a>
+      <a href="/conversations" class="{{if eq .Nav "conversations"}}active{{end}}">{{template "icon" "chat"}} Conversations</a>
+      <a href="/channels" class="{{if eq .Nav "channels"}}active{{end}}">{{template "icon" "radio"}} Channels {{if .Counts.Online}}<span class="count">{{.Counts.Online}} online</span>{{end}}</a>
+      <div class="section">Access</div>
+      <a href="/keys" class="{{if eq .Nav "keys"}}active{{end}}">{{template "icon" "key"}} API keys</a>
+      <a href="/agents" class="{{if eq .Nav "agents"}}active{{end}}">{{template "icon" "bot"}} Agents</a>
+      <div class="section">System</div>
+      <a href="/events" class="{{if eq .Nav "events"}}active{{end}}">{{template "icon" "activity"}} Events</a>
+      <a href="/settings" class="{{if eq .Nav "settings"}}active{{end}}">{{template "icon" "settings"}} Settings</a>
+      <a href="/docs" class="{{if eq .Nav "docs"}}active{{end}}">{{template "icon" "book"}} Connect &amp; docs</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div id="stats-strip" hx-get="/partials/stats" hx-trigger="sb:stats from:body, every 15s" hx-swap="outerHTML" hx-target="this" hx-select="#stats-strip" hx-boost="false">{{template "stats-strip" .Counts}}</div>
+      <div class="row between">
+        <span class="row small muted"><span id="live-indicator" class="live-dot"></span> live</span>
+        <span class="row">
+          <button class="btn btn-ghost btn-xs" data-theme-toggle title="Toggle theme">{{template "icon" "sun"}}</button>
+          <form method="post" action="/logout" hx-boost="false"><input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="btn btn-ghost btn-xs" title="Log out">{{template "icon" "logout"}}</button></form>
+        </span>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="content">
+      <header class="topbar">
+        <h1>{{.Title}}</h1>
+        <div class="spacer"></div>
+        {{block "actions" .}}{{end}}
+      </header>
+      <div class="content">
+        {{if .Flash}}<div class="flash {{.Flash.Kind}}">{{.Flash.Message}}</div>{{end}}
+        {{template "content" .}}
+      </div>
+    </div>
+  </main>
+</div>
+<div id="modal"></div>
+</body>
+</html>{{end}}

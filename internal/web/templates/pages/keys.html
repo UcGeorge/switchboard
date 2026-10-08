@@ -1,0 +1,32 @@
+{{define "actions"}}<div class="row"><button class="btn btn-sm btn-primary" hx-get="/keys/new" hx-target="#modal">{{template "icon" "plus"}} New API key</button></div>{{end}}
+
+{{define "content"}}<div id="keys" hx-get="/keys" hx-trigger="sb:keys from:body throttle:2s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+<div class="card">
+  <div class="card-b row between wrap">
+    <div class="small muted">Give any OpenAI-compatible app the base URL <code>{{.BaseURL}}/v1</code> and one of these keys as its API key. Keys are stored hashed; the full key is shown only when created.</div>
+    <pre class="code" style="margin:0">OPENAI_BASE_URL={{.BaseURL}}/v1<button class="btn btn-xs copy" data-copy="{{.BaseURL}}/v1">Copy</button></pre>
+  </div>
+</div>
+<div class="card"><div class="card-b tight">
+<div class="table-wrap"><table class="table">
+<thead><tr><th>Name</th><th>Key</th><th>Status</th><th>Limits</th><th>Routing</th><th class="num">Requests</th><th class="num">24h</th><th class="num">Last used</th><th></th></tr></thead>
+<tbody>{{range .Keys}}<tr>
+  <td><span class="cell-primary">{{.Name}}</span><span class="cell-sub mono">{{.ID}}</span></td>
+  <td class="mono">{{.KeyPrefix}}</td>
+  <td>{{if .Revoked}}<span class="badge st-revoked">revoked</span>{{else}}<span class="badge st-active">active</span>{{end}}</td>
+  <td class="small muted">{{if .RateLimitRpm}}{{.RateLimitRpm}} rpm{{else}}default rpm{{end}}{{if .TimeoutSeconds}} · {{.TimeoutSeconds}}s timeout{{end}}{{if .Priority}} · prio {{.Priority}}{{end}}</td>
+  <td class="small">{{if .Allowed}}{{range .Allowed}}<span class="chip">{{.}}</span> {{end}}{{else}}<span class="muted">any model</span>{{end}}{{if .PinnedChannelName}}<br><span class="muted">→ {{.PinnedChannelName}}</span>{{end}}</td>
+  <td class="num">{{n .RequestCount}}</td>
+  <td class="num muted small">{{n .Total24h}} <span class="faint">/ {{n .Completed24h}} ok</span></td>
+  <td class="num muted nowrap">{{if .LastUsedAt}}<span data-ts="{{derefI .LastUsedAt}}">{{ago (derefI .LastUsedAt)}}</span>{{else}}never{{end}}</td>
+  <td class="actions">
+    <a class="btn btn-xs btn-ghost" href="/requests?api_key_id={{.ID}}">Requests</a>
+    {{if not .Revoked}}<button class="btn btn-xs" hx-get="/keys/{{.ID}}/edit" hx-target="#modal">Edit</button>
+    <form hx-post="/keys/{{.ID}}/revoke" hx-confirm="Revoke this key? Apps using it will get 401." data-confirm="Revoke this key? Apps using it will get 401."><button class="btn btn-xs btn-danger">Revoke</button></form>
+    {{else}}<form hx-post="/keys/{{.ID}}/delete" hx-confirm="Delete this key record?" data-confirm="Delete this key record?"><button class="btn btn-xs btn-danger">Delete</button></form>{{end}}
+  </td>
+</tr>{{else}}<tr><td colspan="9">{{template "empty" (dict "icon" "key" "title" "No API keys" "text" "Create one to let an application call this server.")}}</td></tr>{{end}}</tbody></table></div>
+</div></div>
+{{end}}

@@ -1,0 +1,36 @@
+{{define "actions"}}<div class="row">
+  <a class="btn btn-sm" href="/requests?conversation_id={{.C.ID}}">{{template "icon" "inbox"}} Requests</a>
+  <form hx-post="/conversations/{{.C.ID}}/delete" hx-confirm="Remove this conversation record? Requests are kept." data-confirm="Remove this conversation record? Requests are kept."><button class="btn btn-sm btn-danger">{{template "icon" "trash"}} Remove</button></form>
+</div>{{end}}
+
+{{define "content"}}<div id="conversation-{{.C.ID}}" hx-get="/conversations/{{.C.ID}}" hx-trigger="sb:conversation:{{.C.ID}} from:body throttle:1s" hx-swap="innerHTML" class="live-region">{{template "body" .}}</div>{{end}}
+
+{{define "body"}}
+<div class="card"><div class="card-b row between wrap">
+  <div class="grow"><h2>{{.C.Title}}</h2><div class="muted small mono">{{.C.ID}}</div></div>
+  <dl class="kv" style="grid-template-columns:auto auto auto auto;gap:4px 18px">
+    <dt>Key</dt><dd><a href="/requests?api_key_id={{.C.ApiKeyID}}">{{or .KeyName "(deleted)"}}</a></dd>
+    <dt>Model</dt><dd><span class="chip">{{.C.Model}}</span></dd>
+    <dt>Turns</dt><dd>{{.Stats.Requests}} <span class="muted">({{.Stats.Completed}} answered)</span></dd>
+    <dt>Tokens</dt><dd>{{n .Stats.PromptTokens}} / {{n .Stats.CompletionTokens}}</dd>
+    <dt>Started</dt><dd>{{ts .C.CreatedAt}}</dd>
+    <dt>Updated</dt><dd><span data-ts="{{.C.UpdatedAt}}">{{ago .C.UpdatedAt}}</span></dd>
+    <dt>Served by</dt><dd>{{if .Stats.Channels}}{{joinList .Stats.Channels ", "}}{{else}}—{{end}}</dd>
+    <dt>Avg latency</dt><dd>{{if .Stats.Completed}}{{dur .Stats.AvgLatencyMs}}{{else}}—{{end}}</dd>
+  </dl>
+</div></div>
+
+<div class="card"><div class="card-b thread">
+{{range $i, $t := .Turns}}
+  <div class="turn-sep"><span>turn {{add $t.Request.TurnIndex 1}}</span><a href="/requests/{{$t.Request.ID}}">{{trimReq $t.Request.ID}}</a>{{template "status" $t.Request.Status}}{{if $t.Request.ChannelName}}<span>via {{$t.Request.ChannelName}}</span>{{end}}{{if $t.Request.CompletedAt}}<span>{{dur $t.Request.LatencyMs}}</span>{{end}}</div>
+  {{range $t.Messages}}{{template "message" .}}{{end}}
+  {{if $t.HasAnswer}}
+    {{template "message" (dict "Role" "assistant" "Text" $t.Answer.Content "ToolCalls" $t.Answer.ToolCalls "Name" "" "ToolCallID" "")}}
+  {{else if isActive $t.Request.Status}}
+    <div class="msg assistant"><div class="who">A</div><div class="body"><div class="bubble live-output" data-live-output="{{$t.Request.ID}}"><span class="placeholder faint">{{$t.Request.Status}}…</span><span class="cursor"></span></div></div></div>
+  {{else}}
+    <div class="msg assistant"><div class="who">A</div><div class="body"><div class="bubble empty">{{$t.Request.Status}}{{if $t.Request.ErrorMessage}}: {{deref $t.Request.ErrorMessage}}{{end}}</div></div></div>
+  {{end}}
+{{else}}{{template "empty" (dict "icon" "chat" "title" "No turns recorded")}}{{end}}
+</div></div>
+{{end}}

@@ -1,0 +1,14 @@
+{{define "content"}}
+<form class="card" method="get" action="/events" hx-get="/events/table" hx-target="#events-table" hx-swap="outerHTML" hx-trigger="change, keyup changed delay:300ms from:input[name=q], submit" hx-push-url="false">
+  <div class="card-b filters">
+    <input class="input search" type="search" name="q" value="{{.Filter.Search}}" placeholder="Search messages…">
+    <select class="select" name="kind"><option value="">Any kind</option>{{range .Kinds}}<option value="{{.}}" {{if eq . $.Filter.Kind}}selected{{end}}>{{.}}</option>{{end}}</select>
+    <select class="select" name="level"><option value="">Any level</option><option value="info" {{if eq .Filter.Level "info"}}selected{{end}}>info</option><option value="warn" {{if eq .Filter.Level "warn"}}selected{{end}}>warn</option><option value="error" {{if eq .Filter.Level "error"}}selected{{end}}>error</option></select>
+    {{if .Filter.RequestID}}<input type="hidden" name="request_id" value="{{.Filter.RequestID}}"><span class="chip">request {{trimReq .Filter.RequestID}}</span>{{end}}
+    {{if .Filter.ChannelID}}<input type="hidden" name="channel_id" value="{{.Filter.ChannelID}}"><span class="chip">channel</span>{{end}}
+    {{if .Filter.APIKeyID}}<input type="hidden" name="api_key_id" value="{{.Filter.APIKeyID}}"><span class="chip">key</span>{{end}}
+    <a class="btn btn-ghost btn-sm" href="/events">Clear</a>
+  </div>
+</form>
+<div class="card"><div class="card-b tight">{{template "event-table" .Table}}</div></div>
+{{end}}

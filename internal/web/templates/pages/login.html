@@ -1,0 +1,22 @@
+{{define "login"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · {{.Instance}}</title>
+<link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+<script src="/static/app.js?v={{.Version}}" defer></script>
+</head>
+<body>
+<div class="login-wrap">
+  <form class="card login stack" method="post" action="/login">
+    <div class="brand" style="padding:0 0 6px"><span class="dot"></span>{{.Instance}}<small>{{.Version}}</small></div>
+    <h1>Sign in to the dashboard</h1>
+    <p class="muted small">Single-operator instance. Use the dashboard password, or a one-time link from the terminal (<span class="kbd">l</span>) / <code>switchboard auth login-link</code>.</p>
+    {{if .Error}}<div class="flash err">{{.Error}}</div>{{end}}
+    {{if not .HasPassword}}<div class="flash warn">No password is set yet. Start the server once to generate one, or run <code>switchboard auth set-password</code>.</div>{{end}}
+    <input type="hidden" name="next" value="{{.Next}}">
+    <div class="field"><label>Password</label><input class="input" type="password" name="password" autocomplete="current-password" autofocus required></div>
+    <button class="btn btn-primary" type="submit">{{template "icon" "lock"}} Sign in</button>
+  </form>
+</div>
+</body></html>{{end}}
