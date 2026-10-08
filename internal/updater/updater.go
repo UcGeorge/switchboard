@@ -57,6 +57,9 @@ func New() *Client {
 }
 func BaseVersion(v string) string {
 	v = strings.TrimSpace(v)
+	if strings.HasSuffix(v, "-dirty") {
+		v = strings.TrimSuffix(v, "-dirty")
+	}
 	if m := sourceVersion.FindStringSubmatch(v); m != nil {
 		v = m[1]
 	}

@@ -46,7 +46,7 @@ func TestVersionComparison(t *testing.T) {
 	for _, tc := range []struct {
 		current, next string
 		want          bool
-	}{{"0.1.0", "v0.2.0", true}, {"v0.1.0-5-gabc123-dirty", "v0.1.0", false}, {"v0.1.0-5-gabc123", "v0.2.0", true}, {"dev", "v0.1.0", false}, {"v0.2.0", "v0.1.0", false}, {"v1.0.0-beta.1", "v1.0.0", true}} {
+	}{{"0.1.0", "v0.2.0", true}, {"v0.1.0-5-gabc123-dirty", "v0.1.0", false}, {"v0.1.0-5-gabc123", "v0.2.0", true}, {"v0.2.0-dirty", "v0.2.0", false}, {"dev", "v0.1.0", false}, {"v0.2.0", "v0.1.0", false}, {"v1.0.0-beta.1", "v1.0.0", true}} {
 		if Newer(tc.current, tc.next) != tc.want {
 			t.Errorf("%s -> %s", tc.current, tc.next)
 		}
