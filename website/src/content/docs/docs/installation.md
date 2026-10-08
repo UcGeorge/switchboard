@@ -65,6 +65,6 @@ On first run Switchboard creates its private data directory and database. The te
 
 ## Upgrade and uninstall
 
-Back up your database before upgrading. Run `switchboard update --check`, then `switchboard update`, or re-run the installer. See [update behavior](../updates/) for pinned releases, source builds and remote/container boundaries. Schema migrations run automatically when the new version opens the database. Downgrading can require restoring a matching backup; see [backups and retention](../backups/).
+Back up your database before upgrading. On v0.2.0 and newer, run `switchboard update --check`, then `switchboard update`, or re-run the installer. See [update behavior](../updates/) for pinned releases, source builds and remote/container boundaries. If upgrading from v0.1.0, rerun the installer once to get the updater command. Schema migrations run automatically when the new version opens the database. Downgrading can require restoring a matching backup; see [backups and retention](../backups/).
 
 To uninstall, remove the installed executable or Windows installation directory and its PATH entry. Data remains deliberately untouched. `switchboard db path` tells you where it lives; remove it only after preserving anything you need.

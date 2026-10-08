@@ -7,11 +7,11 @@ SQLite remains the zero-configuration default. PostgreSQL is an optional persist
 
 ## Version requirement
 
-PostgreSQL support is newer than the `v0.1.0` release. Until a release containing
-this backend is published, build the current source with `make build`, use the
-Compose source build below, or install `github.com/ucgeorge/switchboard/cmd/switchboard@main`.
-The `@latest` installer may still resolve to the older tagged release; verify
-`switchboard --help` includes `--database-url` before connecting PostgreSQL.
+PostgreSQL support requires **Switchboard v0.2.0 or newer**. Install a current
+release, or run `switchboard update` if your installed version already includes
+the updater. For a v0.1.0 installation, rerun the installer once; that release
+predates the `update` command. See [installation](../installation/) and
+[updating Switchboard](../updates/).
 
 ## Connect a local binary
 

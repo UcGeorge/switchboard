@@ -7,6 +7,12 @@ Switchboard can check the project's GitHub releases and install the matching
 binary for your operating system and architecture. Updating the executable does
 not modify your database, credentials or configuration.
 
+## Version requirement
+
+The `update` command is available in **v0.2.0 and newer**. If you still have
+v0.1.0, rerun the [installer](../installation/) once to obtain it. After that,
+you can upgrade directly from the CLI.
+
 ## Check and install
 
 ```sh
