@@ -244,6 +244,7 @@ whether or not the server is running, and a running server picks changes up
 within a couple of seconds. Add `--json` to any listing for machine output.
 
 ```
+switchboard update [--check]        check for/install a verified local release
 switchboard [serve]                 start the server (TUI; --headless, --open, --addr)
 switchboard keys      list | create | revoke | delete
 switchboard tokens    list | create | revoke | delete
@@ -400,3 +401,7 @@ for existing hardware, Oracle Always Free, or another Linux VPS. This replaces
 the proposed Vercel runtime target. `keel validate` checks its typed configuration.
 The public landing page and docs remain on GitHub Pages; exact setup is in
 [Pages setup](docs/GITHUB_PAGES.md).
+
+Automatic daily update notices can be disabled with `SWITCHBOARD_NO_UPDATE_CHECK=1`.
+`switchboard update` updates the local executable; deployed containers are upgraded
+through Compose/Keel. Back up and restart the server after changing binaries.

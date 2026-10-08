@@ -13,6 +13,7 @@ with tempfile.TemporaryDirectory() as tmp:
   program.chmod(0o755)
  pid,fd=pty.fork()
  if pid==0:
+  os.environ['SWITCHBOARD_NO_UPDATE_CHECK']='1'
   os.environ['TERM']='xterm-256color';os.environ['SWITCHBOARD_DATA_DIR']=str(data)
   os.environ['PATH']=str(shim)+os.pathsep+os.environ['PATH']
   os.environ['SWITCHBOARD_BROWSER_MARKER']=str(pathlib.Path(tmp)/'opened-url')

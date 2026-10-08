@@ -34,7 +34,7 @@ func TestRemoteInstanceCommands(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	server := exec.CommandContext(ctx, bin, "serve", "--headless", "--addr", addr, "--db", dbpath)
-	server.Env = append(os.Environ(), "SWITCHBOARD_CONTROL_TOKEN=integration-admin", "SWITCHBOARD_URL=", "SWITCHBOARD_DB=")
+	server.Env = append(os.Environ(), "SWITCHBOARD_NO_UPDATE_CHECK=1", "SWITCHBOARD_CONTROL_TOKEN=integration-admin", "SWITCHBOARD_URL=", "SWITCHBOARD_DB=")
 	if e = server.Start(); e != nil {
 		t.Fatal(e)
 	}
@@ -56,7 +56,7 @@ func TestRemoteInstanceCommands(t *testing.T) {
 	run := func(args ...string) string {
 		t.Helper()
 		c := exec.CommandContext(ctx, bin, append([]string{"--url", "http://" + addr, "--admin-token", "integration-admin"}, args...)...)
-		c.Env = append(os.Environ(), "SWITCHBOARD_DATA_DIR="+localData, "SWITCHBOARD_DB=", "SWITCHBOARD_URL=")
+		c.Env = append(os.Environ(), "SWITCHBOARD_NO_UPDATE_CHECK=1", "SWITCHBOARD_DATA_DIR="+localData, "SWITCHBOARD_DB=", "SWITCHBOARD_URL=")
 		b, e := c.CombinedOutput()
 		if e != nil {
 			t.Fatalf("%v: %v %s", args, e, b)

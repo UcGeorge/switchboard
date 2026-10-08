@@ -29,6 +29,7 @@ Remote management uses `--url https://your-instance.example` or `SWITCHBOARD_URL
 | `mcp` | `url`, `config`, `add` | Configure local clients for a selected instance |
 | `skill` | `install`, `print` | Serving instructions on the local machine |
 | `db` | `path`, `backup`, `prune`, `vacuum` | Storage maintenance |
+| `update` | `--check`, `--version`, `--force` | Local executable update; see [updates](../updates/) |
 | `version`, `completion` | Version and shell completions | Local CLI tooling |
 
 `auth create-admin-token` and `serve` are server-local operations. Skill installation and client registration are local even when the selected instance is remote. `db backup` remotely downloads into a new client-local file.

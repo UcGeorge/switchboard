@@ -87,7 +87,7 @@ func remotePreRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("serve runs locally; omit --url")
 	}
 	switch path[0] {
-	case "mcp", "skill", "version", "completion", "help":
+	case "mcp", "skill", "version", "completion", "help", "update":
 		return nil
 	}
 	if path[0] == "auth" && path[1] == "create-admin-token" {

@@ -1,5 +1,7 @@
 name: CI
 on: [push, pull_request]
+env:
+  SWITCHBOARD_NO_UPDATE_CHECK: "1"
 permissions:
   contents: read
 jobs:

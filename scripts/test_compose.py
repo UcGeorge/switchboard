@@ -12,7 +12,7 @@ for backend in ['sqlite','postgres']:
   try:
    subprocess.run(cmd+['up','-d','--no-build','--wait','--wait-timeout','120'],check=True)
    port=subprocess.check_output(cmd+['port','switchboard','8080'],text=True).strip().split(':')[-1];base='http://127.0.0.1:'+port
-   env={**os.environ,'SWITCHBOARD_DATABASE_URL':'','DATABASE_URL':'','SWITCHBOARD_DB':'','SWITCHBOARD_URL':'','SWITCHBOARD_ADMIN_TOKEN':token}
+   env={**os.environ,'SWITCHBOARD_NO_UPDATE_CHECK':'1','SWITCHBOARD_DATABASE_URL':'','DATABASE_URL':'','SWITCHBOARD_DB':'','SWITCHBOARD_URL':'','SWITCHBOARD_ADMIN_TOKEN':token}
    cli=[str(root/'bin/switchboard'),'--url',base]
    def run(*args):return subprocess.check_output(cli+list(args),env=env,text=True)
    run('keys','create','--name','persistent-smoke-key','--json')

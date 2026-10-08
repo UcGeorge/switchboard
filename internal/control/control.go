@@ -133,6 +133,7 @@ func (s *Server) command(w http.ResponseWriter, r *http.Request) {
 	} else {
 		cmd.Env = append(cmd.Env, "SWITCHBOARD_DB="+s.DBPath)
 	}
+	cmd.Env = append(cmd.Env, "SWITCHBOARD_NO_UPDATE_CHECK=1")
 	var stdout, stderr limitedBuffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

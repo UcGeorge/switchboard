@@ -11,7 +11,7 @@ export default defineConfig({
   social: [{ icon: 'github', label: 'GitHub', href: `https://github.com/${repo}` }],
   customCss: ['./src/styles/docs.css'],
   sidebar: [
-   { label: 'Start here', items: ['docs/introduction','docs/installation','docs/quickstart'] },
+   { label: 'Start here', items: ['docs/introduction','docs/installation','docs/updates','docs/quickstart'] },
    { label: 'Understand the system', items: ['docs/concepts','docs/lifecycle','docs/conversations'] },
    { label: 'Connect applications & agents', items: ['docs/openai','docs/mcp','docs/clients','docs/oauth','docs/human-in-the-loop'] },
    { label: 'Operate Switchboard', items: ['docs/dashboard','docs/cli','docs/remote','docs/settings','docs/deployment','docs/compose','docs/postgres','docs/hosting','docs/keel','docs/github-pages','docs/security','docs/observability','docs/backups','docs/troubleshooting'] },

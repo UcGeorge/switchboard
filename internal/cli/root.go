@@ -21,6 +21,7 @@ import (
 	"github.com/ucgeorge/switchboard/internal/app"
 	"github.com/ucgeorge/switchboard/internal/core"
 	"github.com/ucgeorge/switchboard/internal/db"
+	"github.com/ucgeorge/switchboard/internal/updater"
 	"github.com/ucgeorge/switchboard/internal/version"
 )
 
@@ -47,6 +48,27 @@ func Execute() int {
 	root := newRoot()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	var notice <-chan updater.Release
+	skipNotice := false
+	for _, arg := range os.Args[1:] {
+		if arg == "update" || arg == "--json" {
+			skipNotice = true
+		}
+	}
+	if !skipNotice {
+		notice = updater.New().Notice(ctx, version.Effective())
+	}
+	defer func() {
+		if !g.json {
+			select {
+			case release, ok := <-notice:
+				if ok {
+					fmt.Fprintf(os.Stderr, "\nSwitchboard %s is available. Run `switchboard update` to install.\n", release.Tag)
+				}
+			default:
+			}
+		}
+	}()
 	if err := root.ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return 1
@@ -86,7 +108,7 @@ server with a terminal status screen and the web dashboard.`,
 	}
 	addServeFlags(serveCmd, &serve)
 
-	root.AddCommand(serveCmd, keysCmd(), tokensCmd(), channelsCmd(), requestsCmd(), conversationsCmd(), sendCmd(),
+	root.AddCommand(updateCmd(), serveCmd, keysCmd(), tokensCmd(), channelsCmd(), requestsCmd(), conversationsCmd(), sendCmd(),
 		eventsCmd(), settingsCmd(), authCmd(), mcpCmd(), skillCmd(), statsCmd(), dbCmd(),
 		&cobra.Command{Use: "version", Short: "Print the version", Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("switchboard", version.String())
