@@ -317,7 +317,7 @@ func (s *Service) ExchangeAuthCode(ctx context.Context, code, clientID, redirect
 	if err != nil {
 		return TokenPair{}, oauthErr("invalid_client", "unknown client")
 	}
-	return s.issueOAuthTokens(ctx, client, rec.Scope, "")
+	return s.issueOAuthTokens(ctx, client, rec.Scope, "", "")
 }
 
 // RefreshOAuthToken implements grant_type=refresh_token with rotation.
@@ -343,10 +343,10 @@ func (s *Service) RefreshOAuthToken(ctx context.Context, refreshToken, clientID 
 	if err != nil {
 		return TokenPair{}, oauthErr("invalid_client", "unknown client")
 	}
-	return s.issueOAuthTokens(ctx, client, t.Scope, t.ID)
+	return s.issueOAuthTokens(ctx, client, t.Scope, t.ID, secret.Hash(refreshToken))
 }
 
-func (s *Service) issueOAuthTokens(ctx context.Context, client sqlcgen.OauthClient, scope, rotateID string) (TokenPair, error) {
+func (s *Service) issueOAuthTokens(ctx context.Context, client sqlcgen.OauthClient, scope, rotateID, previousRefreshHash string) (TokenPair, error) {
 	if scope == "" {
 		scope = "mcp"
 	}
@@ -356,10 +356,14 @@ func (s *Service) issueOAuthTokens(ctx context.Context, client sqlcgen.OauthClie
 	expires := nowMs() + ttl.Milliseconds()
 	var tokenID string
 	if rotateID != "" {
-		if err := s.Q.RotateAgentToken(ctx, sqlcgen.RotateAgentTokenParams{
-			TokenHash: accessHash, TokenPrefix: display, RefreshTokenHash: ptr(refreshHash), ExpiresAt: ptr(expires), ID: rotateID,
-		}); err != nil {
+		n, err := s.Q.RotateAgentToken(ctx, sqlcgen.RotateAgentTokenParams{
+			TokenHash: accessHash, TokenPrefix: display, RefreshTokenHash: ptr(refreshHash), ExpiresAt: ptr(expires), ID: rotateID, PreviousRefreshHash: ptr(previousRefreshHash),
+		})
+		if err != nil {
 			return TokenPair{}, err
+		}
+		if n != 1 {
+			return TokenPair{}, oauthErr("invalid_grant", "refresh token already rotated or revoked")
 		}
 		tokenID = rotateID
 	} else {

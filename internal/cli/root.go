@@ -25,9 +25,11 @@ import (
 )
 
 type globals struct {
-	dbPath string
-	addr   string
-	json   bool
+	dbPath     string
+	addr       string
+	json       bool
+	url        string
+	adminToken string
 }
 
 var g globals
@@ -59,8 +61,9 @@ func newRoot() *cobra.Command {
 		Long: `Switchboard exposes an OpenAI-compatible API whose requests are queued and
 answered by agents connected over MCP. Run it with no arguments to start the
 server with a terminal status screen and the web dashboard.`,
-		SilenceUsage:  true,
-		SilenceErrors: true,
+		SilenceUsage:      true,
+		PersistentPreRunE: remotePreRun,
+		SilenceErrors:     true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runServe(cmd.Context(), serve)
 		},
@@ -68,6 +71,8 @@ server with a terminal status screen and the web dashboard.`,
 	root.PersistentFlags().StringVar(&g.dbPath, "db", envOr("SWITCHBOARD_DB", ""), "path to the SQLite database (default ~/.switchboard/switchboard.db)")
 	root.PersistentFlags().StringVar(&g.addr, "addr", envOr("SWITCHBOARD_ADDR", "127.0.0.1:8080"), "listen address of the server")
 	root.PersistentFlags().BoolVar(&g.json, "json", false, "print machine-readable JSON")
+	root.PersistentFlags().StringVar(&g.url, "url", envOr("SWITCHBOARD_URL", ""), "remote instance base URL")
+	root.PersistentFlags().StringVar(&g.adminToken, "admin-token", envOr("SWITCHBOARD_ADMIN_TOKEN", ""), "remote administration token (prefer environment variable)")
 	addServeFlags(root, &serve)
 
 	serveCmd := &cobra.Command{

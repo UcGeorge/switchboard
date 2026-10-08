@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -16,13 +17,38 @@ import (
 
 const mcpServerName = "switchboard"
 
-func mcpURL(svc *core.Service) string { return svc.LocalURL() + "/mcp" }
+func mcpURL(svc *core.Service) string {
+	if g.url != "" {
+		base, _ := remoteBase()
+		return base + "/mcp"
+	}
+	return svc.LocalURL() + "/mcp"
+}
+func withMCP(ctx context.Context, fn func(context.Context, *core.Service) error) error {
+	if g.url != "" {
+		return fn(ctx, nil)
+	}
+	return runWithService(ctx, fn)
+}
 
 // tokenFor returns the bearer token to embed in a config: the one supplied,
 // or a freshly minted token named after the client.
 func tokenFor(ctx context.Context, svc *core.Service, supplied, name string) (string, bool, error) {
 	if supplied != "" {
 		return supplied, false, nil
+	}
+	if g.url != "" {
+		result, err := remoteCall(ctx, []string{"tokens", "create", "--name=" + name, "--json"})
+		if err != nil {
+			return "", false, err
+		}
+		var out struct {
+			Token string `json:"token"`
+		}
+		if err = json.Unmarshal([]byte(result.Stdout), &out); err != nil {
+			return "", false, err
+		}
+		return out.Token, true, nil
 	}
 	_, plain, err := svc.CreateAgentToken(ctx, name)
 	return plain, true, err
@@ -32,7 +58,10 @@ func mcpSnippet(client, url, token string) (string, error) {
 	switch client {
 	case "claude-code", "claude":
 		return fmt.Sprintf("claude mcp add --transport http %s %s --header \"Authorization: Bearer %s\"", mcpServerName, url, token), nil
-	case "cursor", "windsurf", "json", "vscode":
+	case "vscode":
+		b, _ := json.MarshalIndent(map[string]any{"servers": map[string]any{mcpServerName: map[string]any{"type": "http", "url": url, "headers": map[string]string{"Authorization": "Bearer " + token}}}}, "", "  ")
+		return string(b), nil
+	case "cursor", "windsurf", "json":
 		return fmt.Sprintf(`{
   "mcpServers": {
     "%s": {
@@ -64,10 +93,9 @@ func mcpCmd() *cobra.Command {
 
 	cmd.AddCommand(&cobra.Command{
 		Use: "url", Short: "Print the MCP endpoint URL",
-		RunE: withService(func(ctx context.Context, svc *core.Service) error {
-			fmt.Println(mcpURL(svc))
-			return nil
-		}),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return withMCP(cmd.Context(), func(ctx context.Context, svc *core.Service) error { fmt.Println(mcpURL(svc)); return nil })
+		},
 	})
 
 	var token, tokenName string
@@ -87,7 +115,7 @@ and just add the URL from 'switchboard mcp url'.`,
 			if _, err := mcpSnippet(client, "", ""); err != nil {
 				return err
 			}
-			return runWithService(cmd.Context(), func(ctx context.Context, svc *core.Service) error {
+			return withMCP(cmd.Context(), func(ctx context.Context, svc *core.Service) error {
 				name := tokenName
 				if name == "" {
 					name = client
@@ -126,7 +154,7 @@ claude-code this runs 'claude mcp add' for you. For other clients use
 			if client != "claude-code" && client != "claude" {
 				return fmt.Errorf("automatic registration supports claude-code; run `switchboard mcp config %s` and paste the result", client)
 			}
-			return runWithService(cmd.Context(), func(ctx context.Context, svc *core.Service) error {
+			return withMCP(cmd.Context(), func(ctx context.Context, svc *core.Service) error {
 				name := addName
 				if name == "" {
 					name = "claude-code"

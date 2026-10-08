@@ -217,29 +217,34 @@ func (q *Queries) RevokeAgentToken(ctx context.Context, arg RevokeAgentTokenPara
 	return result.RowsAffected()
 }
 
-const rotateAgentToken = `-- name: RotateAgentToken :exec
+const rotateAgentToken = `-- name: RotateAgentToken :execrows
 UPDATE agent_tokens
 SET token_hash = ?, token_prefix = ?, refresh_token_hash = ?, expires_at = ?
-WHERE id = ?
+WHERE id = ? AND refresh_token_hash = ?6 AND revoked_at IS NULL
 `
 
 type RotateAgentTokenParams struct {
-	TokenHash        string  `json:"token_hash"`
-	TokenPrefix      string  `json:"token_prefix"`
-	RefreshTokenHash *string `json:"refresh_token_hash"`
-	ExpiresAt        *int64  `json:"expires_at"`
-	ID               string  `json:"id"`
+	TokenHash           string  `json:"token_hash"`
+	TokenPrefix         string  `json:"token_prefix"`
+	RefreshTokenHash    *string `json:"refresh_token_hash"`
+	ExpiresAt           *int64  `json:"expires_at"`
+	ID                  string  `json:"id"`
+	PreviousRefreshHash *string `json:"previous_refresh_hash"`
 }
 
-func (q *Queries) RotateAgentToken(ctx context.Context, arg RotateAgentTokenParams) error {
-	_, err := q.db.ExecContext(ctx, rotateAgentToken,
+func (q *Queries) RotateAgentToken(ctx context.Context, arg RotateAgentTokenParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, rotateAgentToken,
 		arg.TokenHash,
 		arg.TokenPrefix,
 		arg.RefreshTokenHash,
 		arg.ExpiresAt,
 		arg.ID,
+		arg.PreviousRefreshHash,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const touchAgentToken = `-- name: TouchAgentToken :exec

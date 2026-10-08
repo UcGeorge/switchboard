@@ -230,6 +230,13 @@ Sign in with the dashboard password or a one-time link
 
 ![Request detail](docs/screenshots/request.png)
 
+## Remote instances
+
+Manage a remote deployment with `--url https://switchboard.example.com` and
+`SWITCHBOARD_ADMIN_TOKEN`. MCP registration uses that remote instance while
+configuring your local agent client. See [remote operation](docs/REMOTE.md)
+for credential setup, command behavior, event following, and backup downloads.
+
 ## CLI
 
 Management commands read and write the database directly, so they work
@@ -364,3 +371,19 @@ rendering, authentication and CSRF.
 Licensed under [MIT](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md),
 [contributing](CONTRIBUTING.md), [security](SECURITY.md),
 [changelog](CHANGELOG.md), and [release procedures](docs/RELEASING.md).
+
+## Documentation website
+
+The open-source Astro/Starlight site in `website/` provides a custom landing
+page and 25 operator guides, with search, themed navigation and cross-links.
+It builds to static files and deploys automatically through `.github/workflows/pages.yml`.
+Enable GitHub Pages with **GitHub Actions** as the source before the first deployment.
+The project subpath is derived from the repository name; no paid hosting is needed.
+
+```sh
+cd website
+npm ci
+npm run dev
+# Production validation:
+npm run build && npm run check
+```

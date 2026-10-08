@@ -129,6 +129,7 @@ func settingsCmd() *cobra.Command {
 
 func authCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "auth", Short: "Dashboard access: password, login links, sessions"}
+	cmd.AddCommand(adminTokenCmd())
 
 	var password string
 	setPw := &cobra.Command{

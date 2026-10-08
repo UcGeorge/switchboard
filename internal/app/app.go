@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/ucgeorge/switchboard/internal/api"
+	"github.com/ucgeorge/switchboard/internal/control"
 	"github.com/ucgeorge/switchboard/internal/core"
 	"github.com/ucgeorge/switchboard/internal/db"
 	"github.com/ucgeorge/switchboard/internal/mcpserver"
@@ -107,6 +108,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	mux := http.NewServeMux()
 	api.New(svc, log).Register(mux)
+	(&control.Server{Service: svc, DBPath: cfg.DBPath}).Register(mux)
 	mcpSrv := mcpserver.New(svc, log)
 	mux.Handle("/mcp", mcpSrv)
 	mux.Handle("/mcp/", mcpSrv)

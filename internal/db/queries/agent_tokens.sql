@@ -15,10 +15,10 @@ SELECT * FROM agent_tokens WHERE refresh_token_hash = ?;
 -- name: ListAgentTokens :many
 SELECT * FROM agent_tokens ORDER BY created_at DESC;
 
--- name: RotateAgentToken :exec
+-- name: RotateAgentToken :execrows
 UPDATE agent_tokens
 SET token_hash = ?, token_prefix = ?, refresh_token_hash = ?, expires_at = ?
-WHERE id = ?;
+WHERE id = ? AND refresh_token_hash = sqlc.arg(previous_refresh_hash) AND revoked_at IS NULL;
 
 -- name: RevokeAgentToken :execrows
 UPDATE agent_tokens SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL;
