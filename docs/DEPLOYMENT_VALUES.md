@@ -4,7 +4,7 @@
 
 Deploy Switchboard and its database to an existing low-cost Linux host.
 
-The deployment needs the **11 values** listed below. Each entry explains what the value is, why it is needed, and how to obtain it. Values marked **sensitive** should be shared through a secure channel — never by plain email or chat.
+The deployment needs the **12 values** listed below. Each entry explains what the value is, why it is needed, and how to obtain it. Values marked **sensitive** should be shared through a secure channel — never by plain email or chat.
 
 | # | Value | Type | Sensitive | Required |
 |---|-------|------|-----------|----------|
@@ -14,11 +14,12 @@ The deployment needs the **11 values** listed below. Each entry explains what th
 | 4 | Verified SSH host key | Multi-line text | No | Yes |
 | 5 | Remote deployment directory | Text | No | Yes |
 | 6 | Stable Compose project identifier | Text | No | Yes |
-| 7 | PostgreSQL password | Text | Yes | Yes |
-| 8 | Remote administration token | Text | Yes | Yes |
-| 9 | Dashboard password | Text | Yes | Yes |
-| 10 | Optional HTTPS domain | Text | No | No |
-| 11 | Public application URL | URL | No | No |
+| 7 | External PostgreSQL connection URL | Text | Yes | Yes |
+| 8 | PostgreSQL password | Text | Yes | Yes |
+| 9 | Remote administration token | Text | Yes | Yes |
+| 10 | Dashboard password | Text | Yes | Yes |
+| 11 | Optional HTTPS domain | Text | No | No |
+| 12 | Public application URL | URL | No | No |
 
 ---
 
@@ -110,7 +111,23 @@ Choose one stable name per instance; do not change it when renaming a Keel targe
 
 Keep this identifier unchanged to preserve volume names..
 
-## 7. PostgreSQL password
+## 7. External PostgreSQL connection URL
+
+Type: Text · **Sensitive — share securely** · Only applies when DATABASE_BACKEND = external-postgres
+
+**Why it is needed**
+
+Connects the application to your existing PostgreSQL service instead of starting a database container.
+
+**How to get it**
+
+Copy the provider's connection URL; use sslmode=verify-full with a trusted CA for external connections.
+
+**Format**
+
+PostgreSQL URL with database credentials and TLS options..
+
+## 8. PostgreSQL password
 
 Type: Text · **Sensitive — share securely** · Only applies when DATABASE_BACKEND = postgres
 
@@ -126,7 +143,7 @@ Generate a strong URL-safe value and retain it across deployments, or explicitly
 
 At least 24 URL-safe characters; openssl rand -hex 32 works..
 
-## 8. Remote administration token
+## 9. Remote administration token
 
 Type: Text · **Sensitive — share securely**
 
@@ -142,7 +159,7 @@ Generate with openssl rand -hex 32. Keep this separate from agent and caller cre
 
 At least 32 characters.
 
-## 9. Dashboard password
+## 10. Dashboard password
 
 Type: Text · **Sensitive — share securely**
 
@@ -158,7 +175,7 @@ Generate a strong unique password and store it in your password manager.
 
 At least 12 characters.
 
-## 10. Optional HTTPS domain
+## 11. Optional HTTPS domain
 
 Type: Text · Optional
 
@@ -174,7 +191,7 @@ Point the domain's DNS record at the host and open TCP 80/443 in its firewalls.
 
 DNS name without scheme or path..
 
-## 11. Public application URL
+## 12. Public application URL
 
 Type: URL · Optional · Only applies when DOMAIN is set
 

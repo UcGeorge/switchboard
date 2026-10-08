@@ -18,3 +18,5 @@ coverage.out
 
 __pycache__/
 *.pyc
+
+.agents

@@ -81,7 +81,16 @@ deployments:
         type: select
         group: 2
         default: postgres
-        options: [sqlite, postgres]
+        options: [sqlite, postgres, external-postgres]
+      DATABASE_URL:
+        label: External PostgreSQL connection URL
+        secret: true
+        group: 2
+        when: {var: DATABASE_BACKEND, eq: external-postgres}
+        validation: {pattern: "postgres(ql)?://.+", message: PostgreSQL URL with database credentials and TLS options.}
+        manifest:
+          why: Connects the application to your existing PostgreSQL service instead of starting a database container.
+          how: Copy the provider's connection URL; use sslmode=verify-full with a trusted CA for external connections.
       POSTGRES_PASSWORD:
         label: PostgreSQL password
         secret: true

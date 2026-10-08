@@ -24,7 +24,7 @@ keel validate
 keel dev
 ```
 
-Create a target for `compose-ssh` and enter its host, SSH key, verified host key, stable Compose project name, database backend, and secrets. The database defaults to PostgreSQL; SQLite is selectable. Keel masks secret inputs, but do not deliberately print them in deployment scripts.
+Create a target for `compose-ssh` and enter its host, SSH key, verified host key, stable Compose project name, database backend, and secrets. The database defaults to bundled PostgreSQL; SQLite or an external PostgreSQL URL is selectable. Keel masks secret inputs, but do not deliberately print them in deployment scripts.
 
 Headless use:
 
@@ -37,7 +37,7 @@ Keep that private values file out of Git. See [Keel's variable configuration](ht
 
 ## What the deployment does
 
-It verifies SSH and remote Docker, uploads the application source, creates a private `.env` file, builds on the remote host and starts the selected Compose services. It waits for service health and returns the public URL, or `localhost:8080` for access through a tunnel.
+It verifies SSH and remote Docker, uploads the application source into a private per-run release directory, creates a private `.env` file, builds on the remote host and starts the selected Compose services. It waits for service health and returns the public URL, or `localhost:8080` for access through a tunnel.
 
 The Keel environment contains SSH, Python, tar and CA certificates. It does not run a Docker daemon: Docker builds happen on the remote host over SSH, consistent with the [Keel environment model](https://keel-cloud.mintlify.site/guides/environment-images).
 
