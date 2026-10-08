@@ -25,7 +25,7 @@ These connections do different jobs. Adding Switchboard to an agent's MCP config
 
 ## What ships
 
-One Go executable runs the chat API, MCP transport, OAuth endpoints, HTMX dashboard, terminal status screen, and management CLI. SQLite is embedded; you do not install a database server. The runtime dashboard uses locally bundled assets. This public documentation site is a separate static website hosted on GitHub Pages.
+One Go executable runs the chat API, MCP transport, OAuth endpoints, HTMX dashboard, terminal status screen, and management CLI. SQLite is embedded by default; PostgreSQL is an optional backend. See [database selection](../postgres/). The runtime dashboard uses locally bundled assets. This public documentation site is a separate static website hosted on GitHub Pages.
 
 ## Compatibility boundaries
 

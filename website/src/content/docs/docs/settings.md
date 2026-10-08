@@ -52,3 +52,7 @@ Use positive time intervals for useful leases, deadlines, stale detection, and t
 A longer request deadline does not extend the claim lease. Agents still need progress or lease renewal. A stale threshold shorter than the expected silent reasoning interval can mark a busy agent offline. Keep agents heartbeating or choose intervals consistent with their behavior. See [lifecycle](../lifecycle/).
 
 Key-specific timeout, RPM, priority, model restrictions, and pinning live on the key record. The dashboard offers editing; creation flags are documented in the [CLI guide](../cli/).
+
+## Deployment environment overrides
+
+`SWITCHBOARD_DATABASE_URL` selects PostgreSQL; `DATABASE_URL` is a fallback. `SWITCHBOARD_ADMIN_PASSWORD` sets the dashboard password on startup. Each runtime setting can also be supplied as `SWITCHBOARD_` plus its uppercase key, such as `SWITCHBOARD_PUBLIC_URL`. These environment values override stored settings while present. Use [Compose configuration](../compose/) for deployment examples.

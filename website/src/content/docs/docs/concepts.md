@@ -5,7 +5,7 @@ description: "Learn the entities and routing rules before configuring a pool of 
 
 ## Instance
 
-An instance is one running Switchboard server backed by one SQLite database. It has a single operator identity, a dashboard password, and independent caller, agent, and administration credentials. Run **one server per database**. Management CLI operations can run alongside it.
+An instance is one running Switchboard server backed by one selected database. It has a single operator identity, a dashboard password, and independent caller, agent, and administration credentials. Run **one server per database**. Management CLI operations can run alongside it.
 
 ## Caller and API key
 

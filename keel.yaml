@@ -1,0 +1,130 @@
+version: 1
+deployments:
+  compose-ssh:
+    description: Deploy Switchboard and its database to an existing low-cost Linux host.
+    long_description: |
+      Deploys this checkout with Docker Compose over SSH. Suitable for an existing
+      home server, an Oracle Always Free ARM VM, or a paid VPS. The host must already
+      have Docker with the Compose plugin and a deployment user authorized to use it.
+      No VM is purchased or provisioned by this deployment. The default bind is loopback;
+      a supplied domain enables Caddy HTTPS. Database volumes survive code updates.
+    environment:
+      dockerfile: deploy/ssh.Dockerfile
+      context: deploy
+    steps:
+      - name: Verify SSH identity and remote Docker
+        run: python3 deploy/ssh/deploy.py preflight
+      - name: Upload source and start Compose services
+        run: python3 deploy/ssh/deploy.py deploy
+      - name: Verify service health
+        run: |
+          python3 deploy/ssh/deploy.py health
+          export APP_URL="${PUBLIC_URL:-http://localhost:8080}"
+    groups:
+      1: Host and access
+      2: Application and database
+    variables:
+      SSH_HOST:
+        label: Hostname or IP address
+        group: 1
+        validation: {pattern: "[A-Za-z0-9.-]+", message: Hostname or IPv4 address only.}
+        manifest:
+          why: Identifies the existing host running Docker Compose.
+          how: Copy the host's public IPv4 address or its DNS name from your provider console.
+      SSH_PORT:
+        label: SSH port
+        type: number
+        group: 1
+        required: false
+        default: "22"
+        validation: {min: 1, max: 65535}
+      SSH_USER:
+        label: Deployment user
+        group: 1
+        validation: {pattern: "[a-z_][a-z0-9_-]*", message: Linux account name.}
+        manifest:
+          why: Selects the account that can deploy to the host.
+          how: Create a dedicated deployment user and authorize it to use Docker; Docker access is root-equivalent.
+      SSH_PRIVATE_KEY:
+        label: SSH private key
+        type: multiline
+        secret: true
+        group: 1
+        manifest:
+          why: Authenticates the deployment account without an interactive password.
+          how: Generate a dedicated SSH key locally and install its public key in the user's authorized_keys.
+      SSH_KNOWN_HOSTS:
+        label: Verified SSH host key
+        type: multiline
+        group: 1
+        manifest:
+          why: Prevents connecting to an impersonated host; strict verification stays enabled.
+          how: Obtain the host key via a trusted console and verify its fingerprint before supplying a known_hosts line.
+      DEPLOY_DIR:
+        label: Remote deployment directory
+        group: 1
+        default: /opt/switchboard
+        validation: {pattern: "/[A-Za-z0-9_./-]+", message: Absolute path without spaces.}
+        manifest:
+          why: Stores uploaded source and private environment configuration.
+          how: Create this directory owned by the deployment user before the first run. Use a distinct path per instance.
+      COMPOSE_PROJECT:
+        label: Stable Compose project identifier
+        group: 1
+        default: switchboard
+        validation: {pattern: "[a-z][a-z0-9-]*", message: Keep this identifier unchanged to preserve volume names.}
+        manifest:
+          why: Selects persistent volumes and prevents mixing different instances.
+          how: Choose one stable name per instance; do not change it when renaming a Keel target.
+      DATABASE_BACKEND:
+        label: Database backend
+        type: select
+        group: 2
+        default: postgres
+        options: [sqlite, postgres]
+      POSTGRES_PASSWORD:
+        label: PostgreSQL password
+        secret: true
+        group: 2
+        when: {var: DATABASE_BACKEND, eq: postgres}
+        validation: {pattern: "[A-Za-z0-9_-]{24,}", message: At least 24 URL-safe characters; openssl rand -hex 32 works.}
+        manifest:
+          why: Secures the internal PostgreSQL service. Changing this does not rotate a password in an existing volume.
+          how: Generate a strong URL-safe value and retain it across deployments, or explicitly rotate it inside PostgreSQL first.
+      CONTROL_TOKEN:
+        label: Remote administration token
+        secret: true
+        group: 2
+        validation: {min_length: 32}
+        manifest:
+          why: Enables authenticated management from a laptop.
+          how: Generate with openssl rand -hex 32. Keep this separate from agent and caller credentials.
+      ADMIN_PASSWORD:
+        label: Dashboard password
+        secret: true
+        group: 2
+        validation: {min_length: 12}
+        manifest:
+          why: Protects the web dashboard without relying on a generated first-run password in logs.
+          how: Generate a strong unique password and store it in your password manager.
+      DOMAIN:
+        label: Optional HTTPS domain
+        group: 2
+        required: false
+        validation: {pattern: "[A-Za-z0-9.-]+", message: DNS name without scheme or path.}
+        manifest:
+          why: Enables Caddy TLS and public OAuth discovery; leave blank for an SSH-tunnel-only instance.
+          how: Point the domain's DNS record at the host and open TCP 80/443 in its firewalls.
+      PUBLIC_URL:
+        label: Public application URL
+        type: url
+        group: 2
+        required: false
+        when: {var: DOMAIN, set: true}
+        manifest:
+          why: Supplies the externally reachable HTTPS URL to OAuth discovery and connection links.
+          how: Use https:// followed by exactly the supplied domain.
+    outputs:
+      APP_URL:
+        label: Application address
+        description: Public HTTPS URL, or localhost reached through an SSH tunnel to the host.

@@ -18,7 +18,7 @@ caller as a normal OpenAI response, streaming included.
 ```
 
 It is a single Go binary: HTTP API, MCP endpoint, OAuth server, web dashboard
-(HTMX), terminal UI and CLI, backed by one SQLite file. No CGO, no external
+(HTMX), terminal UI and CLI, backed by SQLite by default or an optional PostgreSQL database. No CGO, no external
 services.
 
 ![Overview](docs/screenshots/overview.png)
@@ -387,3 +387,16 @@ npm run dev
 # Production validation:
 npm run build && npm run check
 ```
+
+## Compose, PostgreSQL and Keel
+
+`docker compose up -d --build --wait` runs the SQLite default. Add
+`-f compose.yaml -f compose.postgres.yaml` for bundled PostgreSQL after setting
+`POSTGRES_PASSWORD` in `.env`. Use `SWITCHBOARD_DATABASE_URL` for an existing
+PostgreSQL service. See [self-hosting](docs/SELF_HOSTING.md).
+
+[Keel](https://keel-cloud.mintlify.site/) provides the `compose-ssh` deployment
+for existing hardware, Oracle Always Free, or another Linux VPS. This replaces
+the proposed Vercel runtime target. `keel validate` checks its typed configuration.
+The public landing page and docs remain on GitHub Pages; exact setup is in
+[Pages setup](docs/GITHUB_PAGES.md).

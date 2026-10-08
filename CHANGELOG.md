@@ -13,3 +13,9 @@
 - Atomic single-use OAuth refresh rotation and ownership-safe offline channels.
 - Non-root container deployment and fresh-TUI/container smoke tests.
 - GitHub Pages landing page and 25 searchable Astro/Starlight operator guides.
+
+- Optional PostgreSQL backend with native schema migrations, concurrency checks, and logical backups.
+- Compose deployments for SQLite, bundled/external PostgreSQL and optional Caddy HTTPS.
+- Keel SSH deployment for existing machines and low-cost persistent VMs.
+- PowerShell-compatible Windows installer, verified by the remote CI workflow.
+- Updated database, Compose, hosting, Keel and GitHub Pages operator guides.

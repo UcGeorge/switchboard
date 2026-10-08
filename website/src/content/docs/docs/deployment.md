@@ -3,7 +3,7 @@ title: "Self-host Switchboard"
 description: "Run locally, under a service manager, or behind a TLS proxy and public hostname."
 ---
 
-Switchboard is a single-server application backed by a local SQLite file. Use one process per database; do not scale replicas over a shared volume. This public GitHub Pages site hosts documentation only. GitHub Pages cannot run the Switchboard server or store its live database.
+Switchboard is a single-server application backed by SQLite or PostgreSQL. Use one process per database; do not scale replicas over a shared volume. This public GitHub Pages site hosts documentation only. GitHub Pages cannot run the Switchboard server or store its live database.
 
 ## Local desktop
 
@@ -76,3 +76,7 @@ A tunnel can expose an otherwise local instance. Use its stable HTTPS hostname a
 ## Health and upgrades
 
 `GET /healthz` checks database access and reports queue counts, online channels, version and uptime. Health does not mean an agent is available for every model. Back up before upgrading, stop the old process, replace the binary, and restart. Recovery cancels caller work whose connections were lost; see [backups](../backups/) and [lifecycle](../lifecycle/).
+
+## Compose and deployment targets
+
+Use the [Compose guide](../compose/) for SQLite, bundled PostgreSQL or an external database, and the [Keel deployment](../keel/) for typed SSH deployment inputs. [Host selection](../hosting/) explains zero-cost candidates and their limits.

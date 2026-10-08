@@ -58,3 +58,38 @@ jobs:
           go-version-file: go.mod
       - run: python scripts/release.py --version ci --target windows/amd64
       - run: python scripts/test_installer.py
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: switchboard
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d switchboard"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SWITCHBOARD_TEST_POSTGRES_URL: postgresql://postgres:test-only-password@localhost:5432/switchboard?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: go test -race -count=1 ./internal/core ./internal/api ./internal/mcpserver ./internal/web ./internal/control ./internal/db
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make build
+      - run: docker build -t switchboard:local .
+      - run: python3 scripts/test_compose.py
+      - run: python3 scripts/test_keel_deployment.py
+      - run: docker build -f deploy/ssh.Dockerfile -t switchboard-keel:test deploy

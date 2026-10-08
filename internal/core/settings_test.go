@@ -62,3 +62,17 @@ func TestSettingValidation(t *testing.T) {
 		t.Errorf("BaseURL = %q, want the configured public URL", got)
 	}
 }
+
+func TestEnvironmentSettingOverridesStoredValue(t *testing.T) {
+	t.Setenv("SWITCHBOARD_LEASE_SECONDS", "91")
+	svc := newTestService(t)
+	if svc.Settings().Lease != 91*time.Second {
+		t.Fatal("environment override not applied")
+	}
+	if err := svc.SetSetting(context.Background(), KeyLease, "66"); err != nil {
+		t.Fatal(err)
+	}
+	if svc.Settings().Lease != 91*time.Second {
+		t.Fatal("stored setting replaced environment override")
+	}
+}

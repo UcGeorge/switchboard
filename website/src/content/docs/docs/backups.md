@@ -43,3 +43,7 @@ Deleting history frees pages inside SQLite but may not shrink the file immediate
 ## Upgrade safety
 
 Create a backup before replacing a binary. Schema migrations apply automatically on open. A newer database may not work with an older binary; restore the corresponding pre-upgrade snapshot to roll back safely.
+
+## PostgreSQL
+
+PostgreSQL backups use a custom-format `pg_dump`, not a SQLite snapshot. See [PostgreSQL backup and restore](../postgres/#backup-and-restore) for client-version requirements and restoration.

@@ -16,7 +16,7 @@ make check
 
 ## SQL changes
 
-Install sqlc 1.31.1, edit queries or add a new numbered migration, run `make generate`, then `sqlc diff`. Commit generated Go code with its SQL. Do not modify a migration already shipped to users to add new schema behavior.
+Install sqlc 1.31.1, edit queries or add a new numbered migration for both backend schemas, run `make generate`, then `sqlc diff`. Commit generated Go code with its SQL. Do not modify a migration already shipped to users to add new schema behavior.
 
 ## Docs development
 
@@ -35,3 +35,7 @@ Use relative links between guides so a project-subpath deployment works. Keep co
 Open focused issues with version, OS, command, expected behavior and redacted output. Bug fixes should include a regression test along the failing user path. Do not attach real databases or credentials. Security issues belong in private vulnerability reporting, not public discussions.
 
 Source and contributions are MIT-licensed. Third-party dependencies retain their own notices; see the repository's THIRD_PARTY_NOTICES.md.
+
+## PostgreSQL tests
+
+Set `SWITCHBOARD_TEST_POSTGRES_URL` to a disposable PostgreSQL test database, then run the backend suites. Each test creates and drops a random isolated schema, so the test account needs schema-creation permissions. Never point this variable at production. Both backend migration schemas must remain consistent with shared sqlc-generated queries.

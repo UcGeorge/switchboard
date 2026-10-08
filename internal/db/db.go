@@ -48,6 +48,9 @@ func Open(path string) (*sql.DB, error) {
 	if IsPostgresURL(path) {
 		return openPostgres(path)
 	}
+	if strings.Contains(path, "://") {
+		return nil, fmt.Errorf("unsupported database URL scheme")
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("create data dir: %w", err)
 	}

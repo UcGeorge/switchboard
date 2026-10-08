@@ -14,7 +14,7 @@ export default defineConfig({
    { label: 'Start here', items: ['docs/introduction','docs/installation','docs/quickstart'] },
    { label: 'Understand the system', items: ['docs/concepts','docs/lifecycle','docs/conversations'] },
    { label: 'Connect applications & agents', items: ['docs/openai','docs/mcp','docs/clients','docs/oauth','docs/human-in-the-loop'] },
-   { label: 'Operate Switchboard', items: ['docs/dashboard','docs/cli','docs/remote','docs/settings','docs/deployment','docs/security','docs/observability','docs/backups','docs/troubleshooting'] },
+   { label: 'Operate Switchboard', items: ['docs/dashboard','docs/cli','docs/remote','docs/settings','docs/deployment','docs/compose','docs/postgres','docs/hosting','docs/keel','docs/github-pages','docs/security','docs/observability','docs/backups','docs/troubleshooting'] },
    { label: 'Reference & project', items: ['docs/api-reference','docs/mcp-reference','docs/architecture','docs/contributing','docs/releases'] },
   ],
  })],
