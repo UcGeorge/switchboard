@@ -69,6 +69,9 @@ func remoteCall(ctx context.Context, args []string) (control.Result, error) {
 	return result, err
 }
 func remotePreRun(cmd *cobra.Command, args []string) error {
+	if cmd.Name() == "update" {
+		return nil
+	} // Self-update addresses this executable, not an instance.
 	if g.databaseURL != "" && !db.IsPostgresURL(g.databaseURL) {
 		return fmt.Errorf("--database-url requires a postgres:// or postgresql:// URL; use --db for SQLite")
 	}

@@ -2,20 +2,22 @@
 
 ## Unreleased
 
-- OpenAI chat/legacy completion endpoints backed by a durable SQLite outbox.
+## 0.2.0 — 2026-10-08
+
+- Optional PostgreSQL backend with native migrations, concurrent claim coverage, and logical backups.
+- Compose deployments for SQLite, bundled PostgreSQL, external PostgreSQL, and optional Caddy HTTPS.
+- Keel SSH deployments for existing machines and low-cost VMs, with typed inputs, strict host verification, private source releases, and persistent volumes.
+- `switchboard update` with platform selection, SHA-256 verification, safe replacement, pinned versions, and source-build safeguards.
+- Opportunistic daily update notices and `update --check --json` for explicit/machine-readable checks.
+- Windows installer compatibility across PowerShell editions, verified in native CI.
+- Expanded self-hosting, PostgreSQL, Compose, Keel, hosting, update and GitHub Pages guides.
+
+## 0.1.0 — 2026-10-08
+
+- OpenAI-compatible chat/legacy completions backed by a durable SQLite outbox.
 - Authenticated MCP channels, claims, leases, streaming, retries and cancellation.
-- OAuth PKCE authorization, dashboard, terminal status UI and management CLI.
+- OAuth PKCE authorization, dashboard, terminal UI and management CLI.
+- Remote administration and remote MCP configuration with local client registration.
 - Conversation reconstruction, request timelines, live metrics and usage views.
-- First-run data directory creation and startup regression coverage.
-- MIT license, release archives/checksums, Unix and Windows installers, CI.
-
-- Authenticated remote CLI management and remote MCP configuration with local client registration.
-- Atomic single-use OAuth refresh rotation and ownership-safe offline channels.
-- Non-root container deployment and fresh-TUI/container smoke tests.
-- GitHub Pages landing page and 25 searchable Astro/Starlight operator guides.
-
-- Optional PostgreSQL backend with native schema migrations, concurrency checks, and logical backups.
-- Compose deployments for SQLite, bundled/external PostgreSQL and optional Caddy HTTPS.
-- Keel SSH deployment for existing machines and low-cost persistent VMs.
-- PowerShell-compatible Windows installer, verified by the remote CI workflow.
-- Updated database, Compose, hosting, Keel and GitHub Pages operator guides.
+- First-run startup checks, non-root container deployment, MIT licensing and checksummed release archives.
+- GitHub Pages landing page and searchable Astro/Starlight operator documentation.
